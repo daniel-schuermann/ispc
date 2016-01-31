@@ -382,3 +382,13 @@ SymbolTable::RandomType() {
     }
     return iter->second;
 }
+
+const std::map<std::string, Symbol *> *
+SymbolTable::getGlobals() {
+    return variables[0];
+}
+
+const std::map<std::string, std::vector<Symbol *> > *
+SymbolTable::getFunctions() {
+    return &functions;
+}

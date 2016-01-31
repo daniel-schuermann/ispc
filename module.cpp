@@ -58,6 +58,7 @@
 #include <set>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #ifdef ISPC_NVPTX_ENABLED
 #include <map>
 #endif /* ISPC_NVPTX_ENABLED */
@@ -503,6 +504,8 @@ Module::CompileFile() {
 
     ast->GenerateIR();
 
+    if (g->annotateCode)
+        annotateCode();
     if (diBuilder)
         diBuilder->finalize();
     if (errorCount == 0)
@@ -3323,4 +3326,83 @@ Module::CompileAndOutput(const char *srcFile,
 
         return errorCount > 0;
     }
+}
+
+void
+Module::annotateCode() {
+    // Map to store line numbers with generated comment
+    std::map<int, std::string> comments;
+    int linenumber;
+    std::string comment;
+
+    // first: global variables
+    const std::map<std::string, Symbol *> * globals = symbolTable->getGlobals();
+
+    for(auto v = globals->cbegin(); v != globals->cend(); ++v) {
+        linenumber = v->second->pos.first_line;
+        // we only want global variables, that are actually declared in our file.
+        if(linenumber == 0 || strcmp(filename, v->second->pos.name) != 0) continue;
+        // comment creation
+        comment = "[" + v->second->type->GetString() + "] " + v->first;
+        // for multiple declarations in one line append new comment
+        if (comments.count(linenumber)) comment = comments[linenumber] + ", " + comment;
+        comments[linenumber] = comment;
+    }
+
+    // second: functions
+    const std::vector<Function *>* functions = ast->GetFunctions();
+    
+    for(auto it = functions->cbegin(); it != functions->cend(); ++it) {
+        const Symbol* sym = (*it)->GetSymbol();
+        linenumber = sym->pos.first_line -1; // the source pos points to the first line of stmt block
+        // we only want functions, that are actually declared in out file
+        if(linenumber == 0 || strcmp(filename, sym->pos.name) != 0) continue;
+        
+        // comment creation
+        comment = "[";
+        FunctionType * t = (FunctionType*) sym->type;
+        comment += t->GetComment() + "] " + sym->name + "(";
+        int max = t->GetNumParameters();
+        for(int i = 0; i < max; i++) {
+            comment += "[" + t->GetParameterType(i)->GetComment() + "] " + t->GetParameterName(i);
+            if (i != max - 1)
+                comment += ", ";
+            else
+                comment += ")";
+        }
+        comments[linenumber] = comment;
+        
+        // third: code
+        const Stmt* code = (*it)->GetCode();
+        code->GetComments(&comments);
+    }
+    
+    // annotate code
+    std::string filename_explained = std::string(filename);
+    std::size_t found = filename_explained.rfind(".ispc");
+    filename_explained = filename_explained.substr(0,found) + "_explained.ispc";
+    std::ifstream initialFile(filename);
+    std::ofstream outputFile(filename_explained.c_str());
+    std::string line;
+
+    //As long as both the input and output files are open...
+    if(initialFile.is_open() && outputFile.is_open())
+    {
+        for(linenumber = 1; std::getline(initialFile, line); linenumber++) {
+            if(line.size() < 80)
+                line.append(80-line.size(), ' ');
+            auto cmt = comments.find(linenumber);
+            if(cmt != comments.end())
+                line += "// " + cmt->second;
+            outputFile << line << std::endl;
+        }
+    }
+    //If there were any problems with the copying process, let the user know
+    else if(!outputFile.is_open())
+        fprintf(stderr, "--explain option: Couldn't open %s for annotating!\n", filename_explained.c_str());
+    else if(!initialFile.is_open())
+        fprintf(stderr, "--explain option: Couldn't open %s for annotating!\n", filename);
+		
+    initialFile.close();
+    outputFile.close();
 }

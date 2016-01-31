@@ -253,6 +253,12 @@ public:
     /** Returns a random type from the symbol table. */
     const Type *RandomType();
 
+    /** Returns a Map with all global variables. */
+    const std::map<std::string, Symbol *> *  getGlobals();
+    
+    /** Returns a Map with all function symbols. */
+    const std::map<std::string, std::vector<Symbol *> > * getFunctions();
+
 private:
     std::vector<std::string> closestTypeMatch(const char *str,
                                               bool structsVsEnums) const;

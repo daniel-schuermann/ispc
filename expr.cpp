@@ -1385,6 +1385,20 @@ UnaryExpr::Print() const {
     pos.Print();
 }
 
+std::string
+UnaryExpr::GetComment() const {
+    if (!expr || !GetType())
+        return "error: couldn't print unary expr";
+
+    std::string ret;// = "["+ GetType()->GetComment() + "] ";
+    ret += (op == PreInc)? "++" : (op == PreDec)? "--" : (op == Negate)? "-" :
+        (op == LogicalNot)? "!" : (op == BitNot)? "~" : "";
+    ret += expr->GetComment();
+    ret += (op == PostInc)? "++" : (op == PostDec)? "--" : "";
+
+    return ret;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////
 // BinaryExpr
@@ -2844,6 +2858,16 @@ BinaryExpr::Print() const {
     pos.Print();
 }
 
+std::string
+BinaryExpr::GetComment() const {
+    if (!arg0 || !arg1 || !GetType())
+        return "error: couldn't print binary expr.";
+    std::string ret = "(";// = "[" + GetType()->GetString() + "] ";
+
+    ret += arg0->GetComment() + " " + lOpString(op) + " " + arg1->GetComment() + ")";
+
+    return ret;
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // AssignExpr
@@ -3164,6 +3188,30 @@ AssignExpr::Print() const {
     pos.Print();
 }
 
+std::string
+AssignExpr::GetComment() const {
+    if (!lvalue || !rvalue || !GetType())
+        return "";
+    std::string ret;// = "[" + GetType()->GetString() + "] ";
+    ret += lvalue->GetComment();
+    switch (op) {
+    case AssignExpr::Assign:    ret += " = "; break;
+    case AssignExpr::MulAssign: ret += " *= "; break;
+    case AssignExpr::DivAssign: ret += " /= "; break;
+    case AssignExpr::ModAssign: ret += " %%= "; break;
+    case AssignExpr::AddAssign: ret += " += "; break;
+    case AssignExpr::SubAssign: ret += " -= "; break;
+    case AssignExpr::ShlAssign: ret += " <<= "; break;
+    case AssignExpr::ShrAssign: ret += " >>= "; break;
+    case AssignExpr::AndAssign: ret += " &= "; break;
+    case AssignExpr::XorAssign: ret += " ^= "; break;
+    case AssignExpr::OrAssign:  ret += " |= "; break;
+    default:                    ret += " ?? ";
+    }
+    ret += rvalue->GetComment();
+
+    return ret;
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // SelectExpr
@@ -3546,6 +3594,16 @@ SelectExpr::Print() const {
     expr2->Print();
     printf(")");
     pos.Print();
+}
+
+std::string
+SelectExpr::GetComment() const {
+    if (!test || !expr1 || !expr2 || !GetType())
+        return "";
+
+    std::string ret = GetType()->GetComment() + "(" + test->GetComment() + " ? ";
+    ret += expr1->GetComment() + " : " + expr2->GetComment() + ")";
+    return ret;
 }
 
 
@@ -3944,6 +4002,15 @@ FunctionCallExpr::Print() const {
     pos.Print();
 }
 
+std::string
+FunctionCallExpr::GetComment() const {
+    if (!func || !args || !GetType())
+        return "";
+    std::string ret = "[" + GetType()->GetComment() + "] ";
+    ret += "call " + func->GetComment() + args->GetComment();
+    return ret;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////
 // ExprList
@@ -4115,6 +4182,16 @@ ExprList::Print() const {
     pos.Print();
 }
 
+std::string
+ExprList::GetComment() const {
+    std::string ret = "(";
+    for (unsigned int i = 0; i < exprs.size(); ++i) {
+        if (exprs[i] != NULL)
+            ret += exprs[i]->GetComment();
+        ret += (i == exprs.size() - 1) ? ")" : ", ";
+    }
+    return ret;
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // IndexExpr
@@ -4686,6 +4763,12 @@ IndexExpr::Print() const {
     pos.Print();
 }
 
+std::string
+IndexExpr::GetComment() const {
+    if (!baseExpr || !index || !GetType())
+        return "";
+    return baseExpr->GetComment() + "[" + index->GetComment() + "]";
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // MemberExpr
@@ -5317,6 +5400,10 @@ MemberExpr::Print() const {
     pos.Print();
 }
 
+std::string
+MemberExpr::GetComment() const {
+    return expr->GetComment() + "." + identifier;
+}
 
 /** There is no structure member with the name we've got in "identifier".
     Use the approximate string matching routine to see if the identifier is
@@ -6227,6 +6314,52 @@ ConstExpr::Print() const {
     pos.Print();
 }
 
+std::string
+ConstExpr::GetComment() const {
+    std::string ret = "[" + GetType()->GetComment() + "] ";
+    for (int i = 0; i < Count(); ++i) {
+        switch (getBasicType()) {
+        case AtomicType::TYPE_BOOL:
+            ret += boolVal[i] ? "true" : "false";
+            break;
+        case AtomicType::TYPE_INT8:
+            ret += std::to_string((int)int8Val[i]);
+            break;
+        case AtomicType::TYPE_UINT8:
+            ret += std::to_string((int)uint8Val[i]);
+            break;
+        case AtomicType::TYPE_INT16:
+            ret += std::to_string((int)int16Val[i]);
+            break;
+        case AtomicType::TYPE_UINT16:
+            ret += std::to_string((int)uint16Val[i]);
+            break;
+        case AtomicType::TYPE_INT32:
+            ret += std::to_string(int32Val[i]);
+            break;
+        case AtomicType::TYPE_UINT32:
+            ret += std::to_string(uint32Val[i]);
+            break;
+        case AtomicType::TYPE_FLOAT:
+            ret += std::to_string(floatVal[i]);
+            break;
+        case AtomicType::TYPE_INT64:
+            ret += std::to_string(int64Val[i]);
+            break;
+        case AtomicType::TYPE_UINT64:
+            ret += std::to_string(uint64Val[i]);
+            break;
+        case AtomicType::TYPE_DOUBLE:
+            ret += std::to_string(doubleVal[i]);
+            break;
+        default:
+            ret += "unimplemented const type";
+        }
+        if (i != Count() - 1)
+            ret += ", ";
+    }
+    return ret;
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // TypeCastExpr
@@ -7341,6 +7474,10 @@ TypeCastExpr::Print() const {
     pos.Print();
 }
 
+std::string
+TypeCastExpr::GetComment() const {
+    return "(" + GetType()->GetComment() + ")" + expr->GetComment();
+}
 
 Symbol *
 TypeCastExpr::GetBaseSymbol() const {
@@ -7506,6 +7643,12 @@ ReferenceExpr::Print() const {
     pos.Print();
 }
 
+std::string
+ReferenceExpr::GetComment() const {
+    if (expr == NULL || GetType() == NULL)
+        return "";
+    return "&(" + expr->GetComment() + ")";
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // DerefExpr
@@ -7646,6 +7789,12 @@ PtrDerefExpr::Print() const {
     pos.Print();
 }
 
+std::string
+PtrDerefExpr::GetComment() const {
+    if (expr == NULL || GetType() == NULL)
+        return "";
+    return "*(" + expr->GetComment() + ")";
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // RefDerefExpr
@@ -7705,6 +7854,12 @@ RefDerefExpr::Print() const {
     pos.Print();
 }
 
+std::string
+RefDerefExpr::GetComment() const {
+    if (expr == NULL || GetType() == NULL)
+        return "";
+    return "deref-reference (" + expr->GetComment() + ")";
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // AddressOfExpr
@@ -7782,6 +7937,12 @@ AddressOfExpr::Print() const {
     pos.Print();
 }
 
+std::string
+AddressOfExpr::GetComment() const {
+    std::string ret = "&(";
+    ret += (expr ? expr->GetComment() : "NULL expr") + ")";
+    return ret;
+}
 
 Expr *
 AddressOfExpr::TypeCheck() {
@@ -8011,6 +8172,15 @@ SymbolExpr::Print() const {
     pos.Print();
 }
 
+std::string
+SymbolExpr::GetComment() const {
+    if (symbol == NULL || GetType() == NULL)
+        return "";
+
+    std::string ret = "[" + GetType()->GetComment() + "] " + symbol->name;
+    return ret;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////
 // FunctionSymbolExpr
@@ -8078,6 +8248,12 @@ FunctionSymbolExpr::Print() const {
     pos.Print();
 }
 
+std::string
+FunctionSymbolExpr::GetComment() const {
+    if (!matchingFunc || !GetType())
+        return "";
+    return "line " + std::to_string(matchingFunc->pos.first_line -1) + " " + name;
+}
 
 llvm::Constant *
 FunctionSymbolExpr::GetConstant(const Type *type) const {
@@ -8491,6 +8667,10 @@ SyncExpr::Print() const {
     pos.Print();
 }
 
+std::string
+SyncExpr::GetComment() const {
+    return "sync";
+}
 
 Expr *
 SyncExpr::TypeCheck() {
@@ -8553,6 +8733,10 @@ NullPointerExpr::Print() const {
     pos.Print();
 }
 
+std::string
+NullPointerExpr::GetComment() const {
+    return "NULL";
+}
 
 int
 NullPointerExpr::EstimateCost() const {
@@ -8794,6 +8978,11 @@ NewExpr::Optimize() {
 void
 NewExpr::Print() const {
     printf("new (%s)", allocType ? allocType->GetString().c_str() : "NULL");
+}
+
+std::string
+NewExpr::GetComment() const {
+    return "new";
 }
 
 

@@ -141,6 +141,19 @@ Variability::GetString() const {
     }
 }
 
+std::string
+Variability::GetComment() const {
+    switch (type) {
+    case Uniform: return "";
+    case Varying: return std::to_string(g->target->getVectorWidth()) + "x";
+    case SOA: return "soa<" + std::to_string(soaWidth) + ">";
+    case Unbound: return "/*unbound*/";
+    default:
+        FATAL("Unhandled variability");
+        return "";
+    }
+}
+
 
 std::string
 Variability::MangleString() const {
@@ -161,6 +174,7 @@ Variability::MangleString() const {
         return "";
     }
 }
+
 
 ///////////////////////////////////////////////////////////////////////////
 // AtomicType
@@ -420,6 +434,29 @@ AtomicType::GetString() const {
     return ret;
 }
 
+std::string
+AtomicType::GetComment() const {
+    std::string ret;
+    if (isConst)   ret += "const ";
+    if (basicType != TYPE_VOID)
+        ret += variability.GetComment();
+    switch (basicType) {
+    case TYPE_VOID:   ret += "void";            break;
+    case TYPE_BOOL:   ret += "bool";            break;
+    case TYPE_INT8:   ret += "i8";              break;
+    case TYPE_UINT8:  ret += "u8";              break;
+    case TYPE_INT16:  ret += "i16";             break;
+    case TYPE_UINT16: ret += "u16";             break;
+    case TYPE_INT32:  ret += "i32";             break;
+    case TYPE_UINT32: ret += "u32";             break;
+    case TYPE_FLOAT:  ret += "float";           break;
+    case TYPE_INT64:  ret += "i64";             break;
+    case TYPE_UINT64: ret += "u64";             break;
+    case TYPE_DOUBLE: ret += "double";          break;
+    default: FATAL("Logic error in AtomicType::GetComment()");
+    }
+    return ret;
+}
 
 std::string
 AtomicType::Mangle() const {
@@ -781,6 +818,17 @@ EnumType::GetString() const {
     return ret;
 }
 
+std::string
+EnumType::GetComment() const {
+    std::string ret;
+    if (isConst) ret += "const ";
+    ret += variability.GetComment();
+
+    ret += " enum ";
+    if (name.size())
+        ret += name;
+    return ret;
+} 
 
 std::string
 EnumType::Mangle() const {
@@ -1137,6 +1185,24 @@ PointerType::GetString() const {
     return ret;
 }
 
+std::string
+PointerType::GetComment() const {
+    if (baseType == NULL) {
+        Assert(m->errorCount > 0);
+        return "";
+    }
+
+    std::string ret = baseType->GetComment();
+
+    ret += std::string("*");
+    if (isConst) ret += " const";
+    if (isSlice) ret += " slice";
+    if (isFrozen) ret += " /*frozen*/";
+    if (variability == Variability::Varying)
+        ret += " varying"; // TODO
+
+    return ret;
+}
 
 std::string
 PointerType::Mangle() const {
@@ -1502,6 +1568,29 @@ ArrayType::GetString() const {
     return s;
 }
 
+std::string
+ArrayType::GetComment() const {
+    const Type *base = GetBaseType();
+    if (base == NULL) {
+        Assert(m->errorCount > 0);
+        return "";
+    }
+    std::string s = base->GetComment();
+
+    const ArrayType *at = this;
+    // Walk through this and any children arrays and print all of their
+    // dimensions
+    while (at) {
+        char buf[16];
+        if (at->numElements > 0)
+            sprintf(buf, "%d", at->numElements);
+        else
+            buf[0] = '\0';
+        s += std::string("[") + std::string(buf) + std::string("]");
+        at = CastType<ArrayType>(at->child);
+    }
+    return s;
+}
 
 std::string
 ArrayType::Mangle() const {
@@ -1757,6 +1846,13 @@ VectorType::GetString() const {
     return s + std::string(buf);
 }
 
+std::string
+VectorType::GetComment() const {
+    std::string s = base->GetComment();
+    char buf[16];
+    sprintf(buf, "<%d>", numElements);
+    return s + std::string(buf);
+}
 
 std::string
 VectorType::Mangle() const {
@@ -2177,7 +2273,6 @@ StructType::GetAsNonConstType() const {
     }
 }
 
-
 std::string
 StructType::GetString() const {
     std::string ret;
@@ -2205,6 +2300,31 @@ StructType::GetString() const {
     return ret;
 }
 
+std::string
+StructType::GetComment() const {
+    std::string ret;
+    if (isConst)
+        ret += "const ";
+    ret += variability.GetComment();
+
+    if (name[0] == '$') {
+        // Print the whole anonymous struct declaration
+        ret += std::string("struct { ") + name;
+        for (unsigned int i = 0; i < elementTypes.size(); ++i) {
+            ret += elementTypes[i]->GetComment();
+            ret += " ";
+            ret += elementNames[i];
+            ret += "; ";
+        }
+        ret += "}";
+    }
+    else {
+        ret += "struct ";
+        ret += name;
+    }
+
+    return ret;
+}
 
 /** Mangle a struct name for use in function name mangling. */
 static std::string
@@ -2538,6 +2658,15 @@ UndefinedStructType::GetString() const {
     return ret;
 }
 
+std::string
+UndefinedStructType::GetComment() const {
+    std::string ret;
+    if (isConst) ret += "const ";
+    ret += variability.GetComment();
+    ret += "struct ";
+    ret += name;
+    return ret;
+}
 
 std::string
 UndefinedStructType::Mangle() const {
@@ -2779,6 +2908,16 @@ ReferenceType::GetString() const {
     return ret;
 }
 
+std::string
+ReferenceType::GetComment() const {
+    if (targetType == NULL) {
+        Assert(m->errorCount > 0);
+        return "";
+    }
+    std::string ret = targetType->GetComment();
+    ret += std::string(" &");
+    return ret;
+}
 
 std::string
 ReferenceType::Mangle() const {
@@ -3024,6 +3163,30 @@ FunctionType::GetString() const {
     return ret;
 }
 
+std::string
+FunctionType::GetComment() const {
+    if (returnType == NULL)
+        return "/* ERROR */";
+
+    std::string ret;
+    if (isTask)
+        ret += "task ";
+    if (isExported)
+        ret += "export ";
+    if (isExternC)
+        ret += "extern \"C\" ";
+    if (isUnmasked)
+        ret += "unmasked ";
+    if (isSafe)
+        ret += "/*safe*/ ";
+    if (costOverride > 0) {
+        char buf[32];
+        sprintf(buf, "/*cost=%d*/ ", costOverride);
+        ret += buf;
+    }
+    return ret + returnType->GetComment();
+}
+
 
 std::string
 FunctionType::Mangle() const {
@@ -3197,7 +3360,6 @@ FunctionType::GetReturnTypeString() const {
 
     return ret + returnType->GetString();
 }
-
 
 llvm::FunctionType *
 FunctionType::LLVMFunctionType(llvm::LLVMContext *ctx, bool removeMask) const {

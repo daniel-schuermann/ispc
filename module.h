@@ -191,6 +191,7 @@ private:
     static bool writeBitcode(llvm::Module *module, const char *outFileName);
 
     void execPreprocessor(const char *infilename, llvm::raw_string_ostream* ostream) const;
+    void annotateCode();
 };
 
 #endif // ISPC_MODULE_H

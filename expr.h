@@ -98,6 +98,11 @@ public:
 
     /** Prints the expression to standard output (used for debugging). */
     virtual void Print() const = 0;
+    
+    virtual std::string GetComment() const {
+        return "";
+    }
+
 };
 
 
@@ -124,6 +129,7 @@ public:
     llvm::Value *GetValue(FunctionEmitContext *ctx) const;
     const Type *GetType() const;
     void Print() const;
+    std::string GetComment() const;
     Expr *Optimize();
     Expr *TypeCheck();
     int EstimateCost() const;
@@ -172,6 +178,7 @@ public:
     const Type *GetType() const;
     const Type *GetLValueType() const;
     void Print() const;
+    std::string GetComment() const;
 
     Expr *Optimize();
     Expr *TypeCheck();
@@ -209,6 +216,7 @@ public:
     llvm::Value *GetValue(FunctionEmitContext *ctx) const;
     const Type *GetType() const;
     void Print() const;
+    std::string GetComment() const;
 
     Expr *Optimize();
     Expr *TypeCheck();
@@ -235,6 +243,7 @@ public:
     llvm::Value *GetValue(FunctionEmitContext *ctx) const;
     const Type *GetType() const;
     void Print() const;
+    std::string GetComment() const;
 
     Expr *Optimize();
     Expr *TypeCheck();
@@ -262,6 +271,7 @@ public:
     llvm::Value *GetValue(FunctionEmitContext *ctx) const;
     const Type *GetType() const;
     void Print() const;
+    std::string GetComment() const;
     llvm::Constant *GetConstant(const Type *type) const;
     ExprList *Optimize();
     ExprList *TypeCheck();
@@ -289,6 +299,7 @@ public:
     const Type *GetType() const;
     const Type *GetLValueType() const;
     void Print() const;
+    std::string GetComment() const;
 
     Expr *Optimize();
     Expr *TypeCheck();
@@ -321,6 +332,7 @@ public:
     const Type *GetLValueType() const;
     Symbol *GetBaseSymbol() const;
     void Print() const;
+    std::string GetComment() const;
 
     Expr *Optimize();
     Expr *TypeCheck();
@@ -355,6 +367,7 @@ public:
     const Type *GetType() const;
     Symbol *GetBaseSymbol() const;
     void Print() const;
+    std::string GetComment() const;
     Expr *Optimize();
     Expr *TypeCheck();
     int EstimateCost() const;
@@ -456,6 +469,7 @@ public:
     llvm::Value *GetValue(FunctionEmitContext *ctx) const;
     const Type *GetType() const;
     void Print() const;
+    std::string GetComment() const;
     llvm::Constant *GetConstant(const Type *type) const;
 
     Expr *TypeCheck();
@@ -520,6 +534,7 @@ public:
     const Type *GetType() const;
     const Type *GetLValueType() const;
     void Print() const;
+    std::string GetComment() const;
     Expr *TypeCheck();
     Expr *Optimize();
     int EstimateCost() const;
@@ -547,6 +562,7 @@ public:
     const Type *GetLValueType() const;
     Symbol *GetBaseSymbol() const;
     void Print() const;
+    std::string GetComment() const;
     Expr *TypeCheck();
     Expr *Optimize();
     int EstimateCost() const;
@@ -591,6 +607,7 @@ public:
  
     const Type *GetType() const;
     void Print() const;
+    std::string GetComment() const;
     Expr *TypeCheck();
     int EstimateCost() const;
 };
@@ -609,6 +626,7 @@ public:
  
     const Type *GetType() const;
     void Print() const;
+    std::string GetComment() const;
     Expr *TypeCheck();
     int EstimateCost() const;
 };
@@ -629,6 +647,7 @@ public:
     const Type *GetLValueType() const;
     Symbol *GetBaseSymbol() const;
     void Print() const;
+    std::string GetComment() const;
     Expr *TypeCheck();
     Expr *Optimize();
     int EstimateCost() const;
@@ -682,6 +701,7 @@ public:
     Expr *TypeCheck();
     Expr *Optimize();
     void Print() const;
+    std::string GetComment() const;
     int EstimateCost() const;
 
 private:
@@ -708,6 +728,7 @@ public:
     Expr *TypeCheck();
     Expr *Optimize();
     void Print() const;
+    std::string GetComment() const;
     int EstimateCost() const;
     llvm::Constant *GetConstant(const Type *type) const;
 
@@ -768,6 +789,7 @@ public:
     Expr *TypeCheck();
     Expr *Optimize();
     void Print() const;
+    std::string GetComment() const;
     int EstimateCost() const;
 };
 
@@ -788,6 +810,7 @@ public:
     Expr *Optimize();
     llvm::Constant *GetConstant(const Type *type) const;
     void Print() const;
+    std::string GetComment() const;
     int EstimateCost() const;
 };
 
@@ -810,6 +833,7 @@ public:
     Expr *TypeCheck();
     Expr *Optimize();
     void Print() const;
+    std::string GetComment() const;
     int EstimateCost() const;
 
     /** Type of object to allocate storage for. */

@@ -40,6 +40,7 @@
 
 #include "ispc.h"
 #include "ast.h"
+#include <map>
 
 /** @brief Interface class for statements in the ispc language.
 
@@ -70,6 +71,9 @@ public:
     // Stmts don't have anything to do here.
     virtual Stmt *Optimize();
     virtual Stmt *TypeCheck() = 0;
+    
+    // Adds line comments to a list of already created comments.
+    virtual void GetComments(std::map<int, std::string>* comments) const {}
 };
 
 
@@ -85,6 +89,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *TypeCheck();
     int EstimateCost() const;
@@ -114,6 +119,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *Optimize();
     Stmt *TypeCheck();
@@ -137,6 +143,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *TypeCheck();
     int EstimateCost() const;
@@ -182,6 +189,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *TypeCheck();
     int EstimateCost() const;
@@ -207,6 +215,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *TypeCheck();
     int EstimateCost() const;
@@ -279,6 +288,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *TypeCheck();
     int EstimateCost() const;
@@ -304,6 +314,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *TypeCheck();
     int EstimateCost() const;
@@ -328,6 +339,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *TypeCheck();
     int EstimateCost() const;
@@ -351,6 +363,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *TypeCheck();
     int EstimateCost() const;
@@ -373,6 +386,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *TypeCheck();
     int EstimateCost() const;
@@ -395,6 +409,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *TypeCheck();
     int EstimateCost() const;
@@ -418,6 +433,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *TypeCheck();
     int EstimateCost() const;
@@ -438,6 +454,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *TypeCheck();
     int EstimateCost() const;
@@ -485,6 +502,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *Optimize();
     Stmt *TypeCheck();
@@ -510,6 +528,7 @@ public:
 
     void EmitCode(FunctionEmitContext *ctx) const;
     void Print(int indent) const;
+    void GetComments(std::map<int, std::string>* comments) const;
 
     Stmt *TypeCheck();
     int EstimateCost() const;

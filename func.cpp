@@ -625,3 +625,13 @@ Function::GenerateIR() {
         }
     }
 }
+
+const Symbol* 
+Function::GetSymbol() {
+    return sym;
+}
+
+const Stmt* 
+Function::GetCode() {
+    return code;
+}

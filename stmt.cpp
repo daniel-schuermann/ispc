@@ -115,6 +115,19 @@ ExprStmt::Print(int indent) const {
     printf("\n");
 }
 
+void
+ExprStmt::GetComments(std::map<int, std::string>* comments) const {
+    //const Type* t = expr->GetType();
+    int linenumber = this->pos.first_line;
+    std::string comment = expr->GetComment();
+    auto old_comment = comments->find(linenumber);
+    // if exist already comment, append to end.
+    if(old_comment != comments->end())
+        old_comment->second += "; " + comment;
+    else
+        comments->insert(std::make_pair(linenumber, comment));  
+}
+
 
 int
 ExprStmt::EstimateCost() const {
@@ -512,6 +525,25 @@ DeclStmt::Print(int indent) const {
     printf("\n");
 }
 
+void
+DeclStmt::GetComments(std::map<int, std::string>* comments) const {
+    int linenumber = pos.first_line;
+    std::string comment = "";
+    for (unsigned int i = 0; i < vars.size(); ++i) {
+        comment += "[" + vars[i].sym->type->GetComment() + "] " + vars[i].sym->name;
+        if(vars[i].init != NULL)
+            comment += " = " + vars[i].init->GetComment();
+        if(i != vars.size() - 1)
+            comment += ", ";        
+    }
+    auto old_comment = comments->find(linenumber);
+    // if exist already comment, append to end.
+    if(old_comment != comments->end())
+        old_comment->second += "; " + comment;
+    else
+        comments->insert(std::make_pair(linenumber, comment));  
+}
+
 
 int
 DeclStmt::EstimateCost() const {
@@ -695,6 +727,21 @@ IfStmt::Print(int indent) const {
     }
 }
 
+void
+IfStmt::GetComments(std::map<int, std::string>* comments) const {
+    int linenumber = pos.first_line;
+    std::string testString = (test != NULL)? test->GetComment() : "";
+    std::string comment = "if" + testString + (doAllCheck ? " DO ALL CHECK" : "");
+    auto old_comment = comments->find(linenumber);
+    // if exist already comment, append to end.
+    if(old_comment != comments->end())
+        old_comment->second += "; " + comment;
+    else
+        comments->insert(std::make_pair(linenumber, comment));    
+    
+    if(trueStmts != NULL) trueStmts->GetComments(comments);
+    if(falseStmts != NULL) falseStmts->GetComments(comments);
+}
 
 /** Emit code to run both the true and false statements for the if test,
     with the mask set appropriately before running each one.
@@ -1188,6 +1235,11 @@ DoStmt::Print(int indent) const {
     }
 }
 
+void
+DoStmt::GetComments(std::map<int, std::string>* comments) const {
+    if(bodyStmts != NULL) bodyStmts->GetComments(comments);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////
 // ForStmt
@@ -1381,6 +1433,32 @@ ForStmt::Print(int indent) const {
         printf("%*cStmts:\n", indent+4, ' ');
         stmts->Print(indent+8);
     }
+}
+
+void
+ForStmt::GetComments(std::map<int, std::string>* comments) const {
+    int linenumber = pos.first_line;
+    auto iter = comments->find(linenumber);
+    std::string comment;
+    if(iter != comments->end())
+        comment = iter->second + "; for(";
+    else
+        comment = "for(";
+    comments->erase(linenumber);
+    if(init != NULL)
+        init->GetComments(comments);
+    else
+        comments->insert(std::make_pair(linenumber, ""));
+    iter = comments->find(linenumber);
+    iter->second = comment + iter->second + "; " + ((test != NULL)? test->GetComment() : "");
+
+    if(step != NULL) {
+        step->GetComments(comments);
+        iter->second += ")";
+    } else
+        iter->second += ";)";
+
+    if(stmts != NULL) stmts->GetComments(comments);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -2218,6 +2296,41 @@ ForeachStmt::Print(int indent) const {
     }
 }
 
+void
+ForeachStmt::GetComments(std::map<int, std::string>* comments) const {
+    std::string comment = "foreach(";
+    for (unsigned int i = 0; i < dimVariables.size(); ++i) {
+        if (dimVariables[i] != NULL)
+            comment += dimVariables[i]->name;
+        if (i != dimVariables.size()-1)
+            comment += ", ";
+    }
+    comment += " = ";
+    for (unsigned int i = 0; i < startExprs.size(); ++i) {
+        if (startExprs[i] != NULL)
+            comment += startExprs[i]->GetComment();
+        if (i != startExprs.size()-1)
+            comment += ", ";
+    }
+    comment += " ... ";
+    for (unsigned int i = 0; i < endExprs.size(); ++i) {
+        if (endExprs[i] != NULL)
+            comment += endExprs[i]->GetComment();
+        if (i != endExprs.size()-1)
+            comment += ", ";
+    }
+    comment += ")";
+    int linenumber = this->pos.first_line;
+
+    auto old_comment = comments->find(linenumber);
+    // if exist already comment, append to end.
+    if(old_comment != comments->end())
+        old_comment->second += "; " + comment;
+    else
+        comments->insert(std::make_pair(linenumber, comment));  
+    
+    if(stmts != NULL) stmts->GetComments(comments);
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // ForeachActiveStmt
@@ -2389,6 +2502,10 @@ ForeachActiveStmt::Print(int indent) const {
     printf("\n");
 }
 
+void
+ForeachActiveStmt::GetComments(std::map<int, std::string>* comments) const {
+    if(stmts != NULL) stmts->GetComments(comments);
+}
 
 Stmt *
 ForeachActiveStmt::TypeCheck() {
@@ -2622,6 +2739,11 @@ ForeachUniqueStmt::Print(int indent) const {
     printf("\n");
 }
 
+void
+ForeachUniqueStmt::GetComments(std::map<int, std::string>* comments) const {
+    if(stmts != NULL) stmts->GetComments(comments);
+}
+
 
 Stmt *
 ForeachUniqueStmt::TypeCheck() {
@@ -2699,6 +2821,23 @@ CaseStmt::Print(int indent) const {
     stmts->Print(indent+4);
 }
 
+void
+CaseStmt::GetComments(std::map<int, std::string>* comments) const {
+    int linenumber = pos.first_line;
+    std::string comment;
+    auto iter = comments->find(linenumber);
+    if(iter != comments->end())
+        comment = iter->second + "; "; //save old comment, if exists
+    comment += "case " + std::to_string(value) + " : ";
+    comments->erase(linenumber);
+    if(stmts != NULL)
+        stmts->GetComments(comments);
+    iter = comments->find(linenumber);
+    if(iter != comments->end())
+        iter->second = comment + iter->second;
+    else
+        comments->insert(std::make_pair(linenumber, comment));
+}
 
 Stmt *
 CaseStmt::TypeCheck() {
@@ -2735,6 +2874,24 @@ DefaultStmt::Print(int indent) const {
     pos.Print();
     printf("\n");
     stmts->Print(indent+4);
+}
+
+void
+DefaultStmt::GetComments(std::map<int, std::string>* comments) const {
+    int linenumber = pos.first_line;
+    std::string comment;
+    auto iter = comments->find(linenumber);
+    if(iter != comments->end())
+        comment = iter->second + "; "; //save old comment, if exists
+    comment += "default : ";
+    comments->erase(linenumber);
+    if(stmts != NULL)
+        stmts->GetComments(comments);
+    iter = comments->find(linenumber);
+    if(iter != comments->end())
+        iter->second = comment + iter->second;
+    else
+        comments->insert(std::make_pair(linenumber, comment));
 }
 
 
@@ -2906,6 +3063,19 @@ SwitchStmt::Print(int indent) const {
     stmts->Print(indent+4);
 }
 
+void
+SwitchStmt::GetComments(std::map<int, std::string>* comments) const {
+    int linenumber = pos.first_line;
+    std::string comment = "switch" + expr->GetComment();
+    auto iter = comments->find(linenumber);
+    if(iter != comments->end())
+        iter->second += "; " + comment;
+    else
+        comments->insert(std::make_pair(linenumber, comment));
+    if(stmts != NULL) stmts->GetComments(comments);
+}
+
+
 
 Stmt *
 SwitchStmt::TypeCheck() {
@@ -2997,6 +3167,11 @@ UnmaskedStmt::Print(int indent) const {
     printf("\n");
 }
 
+void
+UnmaskedStmt::GetComments(std::map<int, std::string>* comments) const {
+    if(stmts != NULL) stmts->GetComments(comments);
+}
+
 
 Stmt *
 UnmaskedStmt::TypeCheck() {
@@ -3074,6 +3249,21 @@ ReturnStmt::Print(int indent) const {
         expr->Print();
     else printf("(void)");
     printf("\n");
+}
+
+void
+ReturnStmt::GetComments(std::map<int, std::string>* comments) const {
+    int linenumber = pos.first_line;
+    std::string comment;
+    if(expr != NULL)
+        comment = "return " + expr->GetComment();
+    else
+        comment = "return";
+    auto old_comment = comments->find(linenumber);
+    if(old_comment != comments->end())
+        old_comment->second += "; " + comment;
+    else
+        comments->insert(std::make_pair(linenumber, comment));
 }
 
 
@@ -3189,6 +3379,10 @@ LabeledStmt::Print(int indent) const {
         stmt->Print(indent);
 }
 
+void
+LabeledStmt::GetComments(std::map<int, std::string>* comments) const {
+    if(stmt != NULL) stmt->GetComments(comments);
+}
 
 Stmt *
 LabeledStmt::Optimize() {
@@ -3252,6 +3446,13 @@ StmtList::Print(int indent) const {
     for (unsigned int i = 0; i < stmts.size(); ++i)
         if (stmts[i])
             stmts[i]->Print(indent+4);
+}
+
+void
+StmtList::GetComments(std::map<int, std::string>* comments) const {
+    for(int i = 0; i < stmts.size(); i++) {
+        stmts[i]->GetComments(comments);
+    }
 }
 
 

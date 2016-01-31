@@ -151,6 +151,8 @@ public:
         module. */
     void GenerateIR();
 
+    const std::vector<Function *>* GetFunctions();
+
 private:
     std::vector<Function *> functions;
 };

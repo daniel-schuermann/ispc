@@ -51,6 +51,10 @@ public:
     /** Generate LLVM IR for the function into the current module. */
     void GenerateIR();
 
+    // For code annotations.
+    const Symbol* GetSymbol();
+    const Stmt* GetCode();
+
 private:
     void emitCode(FunctionEmitContext *ctx, llvm::Function *function,
                   SourcePos firstStmtPos);

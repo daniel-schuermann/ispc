@@ -369,6 +369,8 @@ int main(int Argc, char *Argv[]) {
         }
         else if (!strcmp(argv[i], "--debug"))
             g->debugPrint = true;
+        else if (!strcmp(argv[i], "--explain"))
+            g->annotateCode = true;
 #ifdef ISPC_IS_WINDOWS
         else if (!strcmp(argv[i], "--dllexport"))
             g->dllExport = true;

@@ -68,6 +68,11 @@ AST::GenerateIR() {
         functions[i]->GenerateIR();
 }
 
+const std::vector<Function *>*
+AST::GetFunctions() {
+    return &functions;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 
 ASTNode *

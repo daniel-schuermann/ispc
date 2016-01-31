@@ -71,6 +71,7 @@ struct Variability {
     bool operator!=(const VarType &t) const { return type != t; }
 
     std::string GetString() const;
+    std::string GetComment() const;
     std::string MangleString() const;
 
     VarType type;
@@ -207,6 +208,10 @@ public:
     /** Returns a text representation of the type (for example, for use in
         warning and error messages). */
     virtual std::string GetString() const = 0;
+    
+    virtual std::string GetComment() const {
+        return GetString();
+    }    
 
     /** Returns a string that represents the mangled type (for use in
         mangling function symbol names for function overloading).  The
@@ -313,6 +318,7 @@ public:
     const AtomicType *GetAsNonConstType() const;
 
     std::string GetString() const;
+    std::string GetComment() const;
     std::string Mangle() const;
     std::string GetCDeclaration(const std::string &name) const;
 
@@ -393,6 +399,7 @@ public:
     const EnumType *GetAsNonConstType() const;
 
     std::string GetString() const;
+    std::string GetComment() const;
     std::string Mangle() const;
     std::string GetCDeclaration(const std::string &name) const;
 
@@ -481,6 +488,7 @@ public:
     const PointerType *GetAsNonConstType() const;
 
     std::string GetString() const;
+    std::string GetComment() const;
     std::string Mangle() const;
     std::string GetCDeclaration(const std::string &name) const;
 
@@ -588,6 +596,7 @@ public:
     const ArrayType *GetAsNonConstType() const;
 
     std::string GetString() const;
+    std::string GetComment() const;
     std::string Mangle() const;
     std::string GetCDeclaration(const std::string &name) const;
 
@@ -659,6 +668,7 @@ public:
     const VectorType *GetAsNonConstType() const;
 
     std::string GetString() const;
+    std::string GetComment() const;
     std::string Mangle() const;
     std::string GetCDeclaration(const std::string &name) const;
 
@@ -714,6 +724,7 @@ public:
     const StructType *GetAsNonConstType() const;
 
     std::string GetString() const;
+    std::string GetComment() const;
     std::string Mangle() const;
     std::string GetCDeclaration(const std::string &name) const;
 
@@ -806,6 +817,7 @@ public:
     const UndefinedStructType *GetAsNonConstType() const;
 
     std::string GetString() const;
+    std::string GetComment() const;
     std::string Mangle() const;
     std::string GetCDeclaration(const std::string &name) const;
 
@@ -853,6 +865,7 @@ public:
     const ReferenceType *GetAsNonConstType() const;
 
     std::string GetString() const;
+    std::string GetComment() const;
     std::string Mangle() const;
     std::string GetCDeclaration(const std::string &name) const;
 
@@ -910,6 +923,7 @@ public:
     const Type *GetAsNonConstType() const;
 
     std::string GetString() const;
+    std::string GetComment() const;
     std::string Mangle() const;
     std::string GetCDeclaration(const std::string &fname) const;
     std::string GetCDeclarationForDispatch(const std::string &fname) const;
