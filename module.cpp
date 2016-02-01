@@ -3380,7 +3380,10 @@ Module::annotateCode() {
     // annotate code
     std::string filename_explained = std::string(filename);
     std::size_t found = filename_explained.rfind(".ispc");
-    filename_explained = filename_explained.substr(0,found) + "_explained.ispc";
+    filename_explained = filename_explained.substr(0,found);
+    if (g->target != NULL)
+        filename_explained += "_" + std::string(g->target->GetISATargetString());
+    filename_explained += "_explained.ispc";
     std::ifstream initialFile(filename);
     std::ofstream outputFile(filename_explained.c_str());
     std::string line;
