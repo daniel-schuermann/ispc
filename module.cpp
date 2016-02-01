@@ -3251,6 +3251,9 @@ Module::CompileAndOutput(const char *srcFile,
                 }
             }
             errorCount += m->errorCount;
+            if (errorCount != 0) {
+                return 1;
+            }
 
             // Only write the generate header file, if desired, the first
             // time through the loop here.
