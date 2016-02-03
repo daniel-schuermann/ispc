@@ -6317,6 +6317,7 @@ ConstExpr::Print() const {
 std::string
 ConstExpr::GetComment() const {
     std::string ret = "[" + GetType()->GetComment() + "] ";
+    char *str = new char[100];
     for (int i = 0; i < Count(); ++i) {
         switch (getBasicType()) {
         case AtomicType::TYPE_BOOL:
@@ -6341,7 +6342,8 @@ ConstExpr::GetComment() const {
             ret += std::to_string(uint32Val[i]);
             break;
         case AtomicType::TYPE_FLOAT:
-            ret += std::to_string(floatVal[i]);
+            sprintf(str,"%g", floatVal[i]);
+            ret += str;
             break;
         case AtomicType::TYPE_INT64:
             ret += std::to_string(int64Val[i]);
@@ -6350,7 +6352,8 @@ ConstExpr::GetComment() const {
             ret += std::to_string(uint64Val[i]);
             break;
         case AtomicType::TYPE_DOUBLE:
-            ret += std::to_string(doubleVal[i]);
+            sprintf(str,"%g", doubleVal[i]);
+            ret += str;
             break;
         default:
             ret += "unimplemented const type";
