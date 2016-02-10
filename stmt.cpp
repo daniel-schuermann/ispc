@@ -731,7 +731,7 @@ void
 IfStmt::GetComments(std::map<int, std::string>* comments) const {
     int linenumber = pos.first_line;
     std::string testString = (test != NULL)? test->GetComment() : "";
-    std::string comment = "if" + testString + (doAllCheck ? " DO ALL CHECK" : "");
+    std::string comment = "if (" + testString + ")" + (doAllCheck ? " DO ALL CHECK" : "");
     auto old_comment = comments->find(linenumber);
     // if exist already comment, append to end.
     if(old_comment != comments->end())
@@ -2330,6 +2330,7 @@ ForeachStmt::GetComments(std::map<int, std::string>* comments) const {
         comments->insert(std::make_pair(linenumber, comment));  
     
     if(stmts != NULL) stmts->GetComments(comments);
+    
 }
 
 ///////////////////////////////////////////////////////////////////////////

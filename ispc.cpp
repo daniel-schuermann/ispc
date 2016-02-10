@@ -1444,7 +1444,7 @@ Globals::Globals() {
     includeStdlib = true;
     runCPP = true;
     debugPrint = false;
-    annotateCode = false;
+    annotateCode = 0;
     printTarget = false;
     NoOmitFramePointer = false;
     debugIR = -1;

@@ -561,7 +561,7 @@ struct Globals {
     
     /** When \c true, source code will be copied and annotated with types
         and more information as comments. */
-    bool annotateCode;
+    int annotateCode;
 
     /** When \c true, target ISA will be printed during ispc's execution. */
     bool printTarget;

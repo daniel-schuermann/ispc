@@ -1390,12 +1390,19 @@ UnaryExpr::GetComment() const {
     if (!expr || !GetType())
         return "error: couldn't print unary expr";
 
-    std::string ret;// = "["+ GetType()->GetComment() + "] ";
+    std::string ret;
+    bool typed = false;
+    if(g->annotateCode > 0) {
+        ret = "["+ GetType()->GetComment() + "]";
+        g->annotateCode--; typed = true;
+    }
     ret += (op == PreInc)? "++" : (op == PreDec)? "--" : (op == Negate)? "-" :
         (op == LogicalNot)? "!" : (op == BitNot)? "~" : "";
+    if(typed) ret += "(";
     ret += expr->GetComment();
+    if(typed) ret += ")";
     ret += (op == PostInc)? "++" : (op == PostDec)? "--" : "";
-
+    if(typed) g->annotateCode++;
     return ret;
 }
 
@@ -2862,10 +2869,14 @@ std::string
 BinaryExpr::GetComment() const {
     if (!arg0 || !arg1 || !GetType())
         return "error: couldn't print binary expr.";
-    std::string ret = "(";// = "[" + GetType()->GetString() + "] ";
-
-    ret += arg0->GetComment() + " " + lOpString(op) + " " + arg1->GetComment() + ")";
-
+    std::string ret;
+    bool typed = false;
+    if(g->annotateCode > 0) {
+        ret = "[" + GetType()->GetComment() + "] ";
+        g->annotateCode--; typed = true;
+    }
+    ret += "(" + arg0->GetComment() + " " + lOpString(op) + " " + arg1->GetComment() + ")";
+    if(typed) g->annotateCode++;
     return ret;
 }
 
@@ -3192,8 +3203,7 @@ std::string
 AssignExpr::GetComment() const {
     if (!lvalue || !rvalue || !GetType())
         return "";
-    std::string ret;// = "[" + GetType()->GetString() + "] ";
-    ret += lvalue->GetComment();
+    std::string ret = lvalue->GetComment();
     switch (op) {
     case AssignExpr::Assign:    ret += " = "; break;
     case AssignExpr::MulAssign: ret += " *= "; break;
@@ -4006,8 +4016,14 @@ std::string
 FunctionCallExpr::GetComment() const {
     if (!func || !args || !GetType())
         return "";
-    std::string ret = "[" + GetType()->GetComment() + "] ";
-    ret += "call " + func->GetComment() + args->GetComment();
+    std::string ret;
+    bool typed = false;
+    if(g->annotateCode > 0) {
+        ret = "[" + GetType()->GetComment() + "] ";
+        /*g->annotateCode--; */typed = true;
+    }
+    ret += "(call " + func->GetComment() + args->GetComment() + ")";
+    //if(typed) g->annotateCode++;
     return ret;
 }
 
@@ -4767,7 +4783,19 @@ std::string
 IndexExpr::GetComment() const {
     if (!baseExpr || !index || !GetType())
         return "";
-    return baseExpr->GetComment() + "[" + index->GetComment() + "]";
+    std::string ret;
+    bool typed = false;
+    if(g->annotateCode > 0) {
+        ret = "[" + GetType()->GetComment() + "](";
+        typed = true;
+        g->annotateCode--;
+    }
+    ret += baseExpr->GetComment() + "[" + index->GetComment() + "]";
+    if(typed) {
+        ret += ")";
+        g->annotateCode++;
+    }
+    return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -5402,7 +5430,18 @@ MemberExpr::Print() const {
 
 std::string
 MemberExpr::GetComment() const {
-    return expr->GetComment() + "." + identifier;
+    std::string ret;
+    bool typed = false;
+    if(g->annotateCode > 0) {
+        ret = "[" + GetType()->GetComment() + "](";
+        typed = true; g->annotateCode--;
+    }
+    ret += expr->GetComment();
+    if(typed) {
+        ret += ")";
+        g->annotateCode++;
+    }
+    return  ret + "." + identifier;
 }
 
 /** There is no structure member with the name we've got in "identifier".
@@ -6316,7 +6355,9 @@ ConstExpr::Print() const {
 
 std::string
 ConstExpr::GetComment() const {
-    std::string ret = "[" + GetType()->GetComment() + "] ";
+    std::string ret;
+    if(g->annotateCode > 0)
+        ret = "[" + GetType()->GetComment() + "] ";
     char *str = new char[100];
     for (int i = 0; i < Count(); ++i) {
         switch (getBasicType()) {
@@ -7483,7 +7524,15 @@ TypeCastExpr::Print() const {
 
 std::string
 TypeCastExpr::GetComment() const {
-    return "(" + GetType()->GetComment() + ")" + expr->GetComment();
+    bool typed = false;
+    if(g->annotateCode > 0) {
+        typed = true;
+        g->annotateCode--;
+    }
+    std::string ret = "(" + GetType()->GetComment() + ")" + expr->GetComment();
+    if(typed)
+        g->annotateCode++;
+    return ret;
 }
 
 Symbol *
@@ -7654,7 +7703,15 @@ std::string
 ReferenceExpr::GetComment() const {
     if (expr == NULL || GetType() == NULL)
         return "";
-    return "&(" + expr->GetComment() + ")";
+    std::string ret;
+    bool typed = false;
+    if(g->annotateCode > 0) {
+        ret = "[" + GetType()->GetComment() + "] ";
+        g->annotateCode--; typed = true;
+    }
+    ret += "&(" + expr->GetComment() + ")";
+    if(typed) g->annotateCode++;
+    return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -7800,7 +7857,15 @@ std::string
 PtrDerefExpr::GetComment() const {
     if (expr == NULL || GetType() == NULL)
         return "";
-    return "*(" + expr->GetComment() + ")";
+    std::string ret;
+    bool typed = false;
+    if(g->annotateCode > 0) {
+        ret = "[" + GetType()->GetComment() + "] ";
+        g->annotateCode--; typed = true;
+    }
+    ret += "*(" + expr->GetComment() + ")";
+    if(typed) g->annotateCode++;
+    return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -7865,7 +7930,15 @@ std::string
 RefDerefExpr::GetComment() const {
     if (expr == NULL || GetType() == NULL)
         return "";
-    return "deref-reference (" + expr->GetComment() + ")";
+    std::string ret;
+    bool typed = false;
+    if(g->annotateCode > 0) {
+        ret = "[" + GetType()->GetComment() + "] ";
+        g->annotateCode--; typed = true;
+    }
+    ret += "deref-reference (" + expr->GetComment() + ")";
+    if(typed) g->annotateCode++;
+    return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -8184,7 +8257,10 @@ SymbolExpr::GetComment() const {
     if (symbol == NULL || GetType() == NULL)
         return "";
 
-    std::string ret = "[" + GetType()->GetComment() + "] " + symbol->name;
+    std::string ret;
+    if(g->annotateCode > 0)
+        ret = "[" + GetType()->GetComment() + "] ";
+    ret += symbol->name;
     return ret;
 }
 
@@ -8259,7 +8335,10 @@ std::string
 FunctionSymbolExpr::GetComment() const {
     if (!matchingFunc || !GetType())
         return "";
-    return "line " + std::to_string(matchingFunc->pos.first_line -1) + " " + name;
+    Symbol* sym = GetBaseSymbol();
+    // TODO: check for correct file
+    std::string ret = sym->pos.name == pos.name ? "line " + std::to_string(matchingFunc->pos.first_line -1) + " " : "";
+    return ret + name;
 }
 
 llvm::Constant *

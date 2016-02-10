@@ -3343,7 +3343,7 @@ Module::annotateCode() {
 
     for(auto v = globals->cbegin(); v != globals->cend(); ++v) {
         linenumber = v->second->pos.first_line;
-        // we only want global variables, that are actually declared in our file.
+        // we only want global variables that are actually declared in our file.
         if(linenumber == 0 || strcmp(filename, v->second->pos.name) != 0) continue;
         // comment creation
         comment = "[" + v->second->type->GetString() + "] " + v->first;
@@ -3358,7 +3358,7 @@ Module::annotateCode() {
     for(auto it = functions->cbegin(); it != functions->cend(); ++it) {
         const Symbol* sym = (*it)->GetSymbol();
         linenumber = sym->pos.first_line -1; // the source pos points to the first line of stmt block
-        // we only want functions, that are actually declared in out file
+        // we only want functions that are actually declared in our file
         if(linenumber == 0 || strcmp(filename, sym->pos.name) != 0) continue;
         
         // comment creation
@@ -3395,11 +3395,12 @@ Module::annotateCode() {
     if(initialFile.is_open() && outputFile.is_open())
     {
         for(linenumber = 1; std::getline(initialFile, line); linenumber++) {
-            if(line.size() < 80)
-                line.append(80-line.size(), ' ');
             auto cmt = comments.find(linenumber);
-            if(cmt != comments.end())
+            if(cmt != comments.end()) {
+                if(line.size() < 80)
+                    line.append(80-line.size(), ' ');
                 line += "// " + cmt->second;
+            }
             outputFile << line << std::endl;
         }
     }

@@ -157,6 +157,7 @@ devUsage(int ret) {
     lPrintVersion();
     printf("\nusage (developer options): ispc\n");
     printf("    [--debug]\t\t\t\tPrint information useful for debugging ispc\n");
+    printf("    [--explain=<value>]\t\t\t\tAnnotate code with debugging information. Types for <value> nested expressions are provided.\n");
     printf("    [--print-target]\t\t\tPrint target's information\n");
     printf("    [--fuzz-test]\t\t\tRandomly perturb program input to test error conditions\n");
     printf("    [--fuzz-seed=<value>]\t\tSeed value for RNG for fuzz testing\n");
@@ -383,8 +384,8 @@ int main(int Argc, char *Argv[]) {
         }
         else if (!strcmp(argv[i], "--debug"))
             g->debugPrint = true;
-        else if (!strcmp(argv[i], "--explain"))
-            g->annotateCode = true;
+        else if (!strncmp(argv[i], "--explain=", 10))
+            g->annotateCode = atoi(argv[i] + 10);
 #ifdef ISPC_IS_WINDOWS
         else if (!strcmp(argv[i], "--dllexport"))
             g->dllExport = true;
