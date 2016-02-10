@@ -6920,9 +6920,13 @@ lUniformValueToVarying(FunctionEmitContext *ctx, llvm::Value *value,
             type->GetAsVaryingType()->LLVMType(g->ctx);
         llvm::Value *retValue = llvm::UndefValue::get(llvmType);
 
+        const StructType *structType = CastType<StructType>(type->GetAsVaryingType());
+
         for (int i = 0; i < collectionType->GetElementCount(); ++i) {
             llvm::Value *v = ctx->ExtractInst(value, i, "get_element");
-            v = lUniformValueToVarying(ctx, v, collectionType->GetElementType(i));
+            // If struct has "bound uniform" member, we don't need to cast it to varying
+            if (!(structType != NULL && structType->GetElementType(i)->IsUniformType()))
+                v = lUniformValueToVarying(ctx, v, collectionType->GetElementType(i));
             retValue = ctx->InsertInst(retValue, v, i, "set_element");
         }
         return retValue;
