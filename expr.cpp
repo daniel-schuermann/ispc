@@ -4022,7 +4022,7 @@ FunctionCallExpr::GetComment() const {
         ret = "[" + GetType()->GetComment() + "] ";
         /*g->annotateCode--; */typed = true;
     }
-    ret += "(call " + func->GetComment() + args->GetComment() + ")";
+    ret += func->GetComment() + args->GetComment();
     //if(typed) g->annotateCode++;
     return ret;
 }
@@ -8337,8 +8337,8 @@ FunctionSymbolExpr::GetComment() const {
         return "";
     Symbol* sym = GetBaseSymbol();
     // TODO: check for correct file
-    std::string ret = sym->pos.name == pos.name ? "line " + std::to_string(matchingFunc->pos.first_line -1) + " " : "";
-    return ret + name;
+    std::string ret = name + (sym->pos.name == pos.name ? "<from Line " + std::to_string(matchingFunc->pos.first_line -1) + ">" : "");
+    return ret;
 }
 
 llvm::Constant *
