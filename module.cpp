@@ -3361,7 +3361,7 @@ Module::annotateCode() {
         // we only want functions that are actually declared in our file
         if(linenumber == 0 || strcmp(filename, sym->pos.name) != 0) continue;
         
-        // comment creation
+        // function declaration comment
         comment = "[";
         FunctionType * t = (FunctionType*) sym->type;
         comment += t->GetComment() + "] " + sym->name + "(";
@@ -3370,8 +3370,11 @@ Module::annotateCode() {
             comment += "[" + t->GetParameterType(i)->GetComment() + "] " + t->GetParameterName(i);
             if (i != max - 1)
                 comment += ", ";
-            else
+            else {
                 comment += ")";
+                if(!(t->isUnmasked || t->isExported)) // if is masked
+                    comment += " with " + std::to_string(g->target->getVectorWidth()) + "xMASK";
+            }
         }
         comments[linenumber] = comment;
         
