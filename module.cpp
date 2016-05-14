@@ -3376,8 +3376,8 @@ Module::annotateCode() {
                 comment += ", ";
             else {
                 comment += ")";
-                if(!(t->isUnmasked || t->isExported)) // if is masked
-                    comment += " with " + std::to_string(g->target->getVectorWidth()) + "xMASK";
+            //    if(!(t->isUnmasked || t->isExported)) // if is masked
+            //        comment += " with " + std::to_string(g->target->getVectorWidth()) + "xMASK";
             }
         }
         comments[linenumber] = comment;

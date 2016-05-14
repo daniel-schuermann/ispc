@@ -1199,7 +1199,7 @@ PointerType::GetComment() const {
     if (isSlice) ret += " slice";
     if (isFrozen) ret += " /*frozen*/";
     if (variability == Variability::Varying)
-        ret += " varying"; // TODO
+        ret += " x" + std::to_string(g->target->getVectorWidth()); 
 
     return ret;
 }

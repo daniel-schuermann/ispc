@@ -3199,11 +3199,15 @@ AssignExpr::Print() const {
     pos.Print();
 }
 
+static bool IsLhs = false;
+
 std::string
 AssignExpr::GetComment() const {
     if (!lvalue || !rvalue || !GetType())
         return "";
+    IsLhs = true;
     std::string ret = lvalue->GetComment();
+    IsLhs = false;
     switch (op) {
     case AssignExpr::Assign:    ret += " = "; break;
     case AssignExpr::MulAssign: ret += " *= "; break;
@@ -4790,7 +4794,23 @@ IndexExpr::GetComment() const {
         typed = true;
         g->annotateCode--;
     }
-    ret += baseExpr->GetComment() + "[" + index->GetComment() + "]";
+    if(index->GetType()->IsUniformType()) { // load/store
+        if(!baseExpr->GetType()->IsVaryingType())// TODO
+            ret += IsLhs? "[store] " : "[load] ";
+        else 
+            ret += IsLhs? "[vector store] " : "[vector load] ";
+    } else { // gather/scatter
+        if(baseExpr->GetType()->IsUniformType())
+            ret += IsLhs? "[scatter] " : "[gather] ";
+        else
+            ret += "[" + std::to_string(g->target->getVectorWidth()) 
+                + "x " + (IsLhs? "scatter" : "gather") + "] ";
+    
+    }
+    ret += baseExpr->GetComment();
+    g->annotateCode--;
+    ret += "[" + index->GetComment() + "]";
+    g->annotateCode++;
     if(typed) {
         ret += ")";
         g->annotateCode++;
@@ -7863,10 +7883,25 @@ PtrDerefExpr::GetComment() const {
         ret = "[" + GetType()->GetComment() + "] ";
         g->annotateCode--; typed = true;
     }
-    ret += "*(" + expr->GetComment() + ")";
+    const Type * type = expr->GetType();
+    if (type->IsUniformType()) { // single pointer
+        if (type->GetBaseType()->IsUniformType()) // single load/store
+            ret += IsLhs? "([store] *" : "([load] *";
+        else // vector load/store
+            ret += IsLhs? "([vector store] *" : "([vector load] *";
+    } else { // multiple pointer
+        if (type->GetBaseType()->IsUniformType()) // gather/scatter
+            ret += IsLhs? "([scatter!] *" : "([gather!] *";
+        else // worst
+            ret += "([" + std::to_string(g->target->getVectorWidth()) 
+                + "x " + (IsLhs? "scatter" : "gather") + "!] *";
+    }
+    
+    ret += expr->GetComment() + ")";
     if(typed) g->annotateCode++;
     return ret;
 }
+
 
 ///////////////////////////////////////////////////////////////////////////
 // RefDerefExpr
@@ -7936,7 +7971,12 @@ RefDerefExpr::GetComment() const {
         ret = "[" + GetType()->GetComment() + "] ";
         g->annotateCode--; typed = true;
     }
-    ret += "deref-reference (" + expr->GetComment() + ")";
+    if(GetType()->IsUniformType()) // target uniform
+        ret += IsLhs? "([store] " : "([load] ";
+    else
+        ret += IsLhs? "([vector store] " : "([vector load] ";
+    
+    ret += expr->GetComment() + ")";
     if(typed) g->annotateCode++;
     return ret;
 }
