@@ -125,7 +125,7 @@ def build_LLVM(version_LLVM, revision, folder, tarball, debug, selfbuild, extra,
     if  version_LLVM == "trunk":
         SVN_PATH="trunk"
     if  version_LLVM == "3.8":
-        SVN_PATH="branches/release_38"
+        SVN_PATH="tags/RELEASE_380/final"
         version_LLVM = "3_8"
     if  version_LLVM == "3.7":
         SVN_PATH="tags/RELEASE_370/final"
@@ -241,13 +241,14 @@ def build_LLVM(version_LLVM, revision, folder, tarball, debug, selfbuild, extra,
     os.makedirs(LLVM_BUILD)
     os.makedirs(LLVM_BIN)
     selfbuild_compiler = ""
+    LLVM_configure_capable = ["3_2", "3_3", "3_4", "3_5", "3_6", "3_7"]
     if selfbuild:
         print_debug("Making selfbuild and use folders " + LLVM_BUILD_selfbuild + " and " +
             LLVM_BIN_selfbuild + "\n", from_validation, alloy_build)
         os.makedirs(LLVM_BUILD_selfbuild)
         os.makedirs(LLVM_BIN_selfbuild)
         os.chdir(LLVM_BUILD_selfbuild)
-        if  version_LLVM == "trunk":
+        if  version_LLVM not in LLVM_configure_capable:
             # TODO: mac_root
             try_do_LLVM("configure release version for selfbuild ",
                     "cmake -G Unix\ Makefiles" + " -DCMAKE_EXPORT_COMPILE_COMMANDS=ON" +
@@ -283,7 +284,7 @@ def build_LLVM(version_LLVM, revision, folder, tarball, debug, selfbuild, extra,
     os.chdir(LLVM_BUILD)
     if debug == False:
         if current_OS != "Windows":
-            if  version_LLVM == "trunk":
+            if  version_LLVM not in LLVM_configure_capable:
                 # TODO: mac_root
                 try_do_LLVM("configure release version ",
                         "cmake -G Unix\ Makefiles" + " -DCMAKE_EXPORT_COMPILE_COMMANDS=ON" +
@@ -311,7 +312,7 @@ def build_LLVM(version_LLVM, revision, folder, tarball, debug, selfbuild, extra,
                     '" -DLLVM_LIT_TOOLS_DIR="C:\\gnuwin32\\bin" ..\\' + LLVM_SRC,
                     from_validation)
     else:
-        if  version_LLVM == "trunk":
+        if  version_LLVM not in LLVM_configure_capable:
             # TODO: mac_root
             try_do_LLVM("configure debug version ",
                     "cmake -G Unix\ Makefiles" + " -DCMAKE_EXPORT_COMPILE_COMMANDS=ON" +
@@ -343,12 +344,12 @@ def build_LLVM(version_LLVM, revision, folder, tarball, debug, selfbuild, extra,
 
 
 def unsupported_llvm_targets(LLVM_VERSION):
-    prohibited_list = {"3.2":["avx512knl-i32x16"],
-                       "3.3":["avx512knl-i32x16"],
-                       "3.4":["avx512knl-i32x16"],
-                       "3.5":["avx512knl-i32x16"],
-                       "3.6":["avx512knl-i32x16"],
-                       "3.7":[],
+    prohibited_list = {"3.2":["avx512knl-i32x16", "avx512skx-i32x16"],
+                       "3.3":["avx512knl-i32x16", "avx512skx-i32x16"],
+                       "3.4":["avx512knl-i32x16", "avx512skx-i32x16"],
+                       "3.5":["avx512knl-i32x16", "avx512skx-i32x16"],
+                       "3.6":["avx512knl-i32x16", "avx512skx-i32x16"],
+                       "3.7":["avx512skx-i32x16"],
                        "3.8":[],
                        "3.9":[],
                        "trunk":[]}   
@@ -377,9 +378,10 @@ def check_targets():
     AVX11 = ["avx1.1-i32x8","avx1.1-i32x16","avx1.1-i64x4"]
     AVX2  = ["avx2-i32x8",  "avx2-i32x16",  "avx2-i64x4"]
     KNL   = ["knl-generic", "avx512knl-i32x16"]
+    SKX   = ["avx512skx-i32x16"]
 
     targets = [["AVX2", AVX2, False], ["AVX1.1", AVX11, False], ["AVX", AVX, False], ["SSE4", SSE4, False], 
-               ["SSE2", SSE2, False], ["KNL", KNL, False]]
+               ["SSE2", SSE2, False], ["KNL", KNL, False], ["SKX", SKX, False]]
     f_lines = take_lines("check_isa.exe", "first")
     for i in range(0,5):
         if targets[i][0] in f_lines:
@@ -403,6 +405,8 @@ def check_targets():
     # here we have SDE
     f_lines = take_lines(sde_exists + " -help", "all")
     for i in range(0,len(f_lines)):
+        if targets[6][2] == False and "skx" in f_lines[i]:
+            answer_sde = answer_sde + [["-skx", "avx512skx-i32x16"]]
         if targets[5][2] == False and "knl" in f_lines[i]:
             answer_sde = answer_sde + [["-knl", "knl-generic"], ["-knl", "avx512knl-i32x16"]]
         if targets[3][2] == False and "wsm" in f_lines[i]:
@@ -727,7 +731,10 @@ def validation_run(only, only_targets, reference_branch, number, notify, update,
                 # *always* specify default values for global variables on each loop iteration
                 stability.wrapexe = ""
                 stability.compiler_exe = None
-
+                # choosing right compiler for a given target
+                # sometimes clang++ is not avaluable. if --ispc-build-compiler = gcc we will pass in g++ compiler
+                if options.ispc_build_compiler == "gcc":
+                    stability.compiler_exe = "g++"
                 if ("knc-generic" in stability.target) or ("knl-generic" in stability.target):
                     stability.compiler_exe = "icpc"
                 stability.wrapexe = get_sde() + " " + sde_targets[j][0] + " -- "

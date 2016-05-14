@@ -45,15 +45,15 @@ Location of LLVM files in your PATH is different than path in LLVM_HOME \n
 variable (or LLVM_HOME is not set). The most likely this means that you are \n
 using default LLVM installation on your system, which is very bad sign. \n
 Note, that ISPC uses LLVM optimizer and is highly dependent on it. We recommend \n
-using *patched* version of LLVM 3.4 or 3.5. Patches are availible in \n
+using *patched* version of LLVM 3.8. Patches are availible in \n
 llvm_patches folder. You can build LLVM manually, or run our scripts, which \n
 will do all the work for you. Do the following: \n
 1. Create a folder, where LLVM will reside and set LLVM_HOME variable to its \n
   path. \n
 2. Set ISPC_HOME variable to your ISPC location (probably current folder).
 3. Run alloy.py tool to checkout and build LLVM: \n
-  alloy.py -b --version=3.5 \n
-4. Add $$LLVM_HOME/bin-3.5/bin path to your PATH. \n
+  alloy.py -b --version=3.8 \n
+4. Add $$LLVM_HOME/bin-3.8/bin path to your PATH. \n
 ==============================================================================
 endef
 
@@ -202,7 +202,7 @@ HEADERS=ast.h builtins.h ctx.h decl.h expr.h func.h ispc.h llvmutil.h module.h \
 	opt.h stmt.h sym.h type.h util.h
 TARGETS=avx2-i64x4 avx11-i64x4 avx1-i64x4 avx1 avx1-x2 avx11 avx11-x2 avx2 avx2-x2 \
 	sse2 sse2-x2 sse4-8 sse4-16 sse4 sse4-x2 \
-	generic-4 generic-8 generic-16 generic-32 generic-64 generic-1 knl
+	generic-4 generic-8 generic-16 generic-32 generic-64 generic-1 knl skx
 ifneq ($(ARM_ENABLED), 0)
     TARGETS+=neon-32 neon-16 neon-8
 endif

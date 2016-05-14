@@ -1641,7 +1641,7 @@ void CWriter::printConstant(llvm::Constant *CPV, bool Static) {
         V = Tmp.convertToDouble();
       }
 
-      if (isnan(V)) {
+      if (std::isnan(V)) {
         // The value is NaN
 
         // FIXME the actual NaN bits should be emitted.
@@ -1665,7 +1665,7 @@ void CWriter::printConstant(llvm::Constant *CPV, bool Static) {
         else
           Out << "LLVM_NAN" << (Val == QuietNaN ? "" : "S") << "(\""
               << Buffer << "\") /*nan*/ ";
-      } else if (isinf(V)) {
+      } else if (std::isinf(V)) {
         // The value is Inf
         if (V < 0) Out << '-';
         Out << "LLVM_INF" <<
@@ -2337,7 +2337,7 @@ static SpecialGlobalClass getGlobalVariableClass(const llvm::GlobalVariable *GV)
 
   // Otherwise, if it is other metadata, don't print it.  This catches things
   // like debug information.
-#if ISPC_LLVM_VERSION >= ISPC_LLVM_3_5 /* LLVM 3.5+ */
+#if ISPC_LLVM_VERSION >= ISPC_LLVM_3_5 && ISPC_LLVM_VERSION <= ISPC_LLVM_3_8 /* LLVM 3.5-3.8 */
   // Here we compare char *
   if (!strcmp(GV->getSection(), "llvm.metadata"))
 #else
@@ -3343,7 +3343,11 @@ void CWriter::printFunction(llvm::Function &F) {
   // print the basic blocks
   for (llvm::Function::iterator BB = F.begin(), E = F.end(); BB != E; ++BB) {
     if (llvm::Loop *L = LI->getLoopFor(&*BB)) {
+#if ISPC_LLVM_VERSION >= ISPC_LLVM_3_9 // LLVM 3.9+
+      if (L->getHeader()->getIterator() == BB && L->getParentLoop() == 0)
+#else
       if (L->getHeader() == BB && L->getParentLoop() == 0)
+#endif
         printLoop(L);
     } else {
       printBasicBlock(&*BB);

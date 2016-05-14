@@ -168,6 +168,11 @@ lDeclareSizeAndPtrIntTypes(SymbolTable *symbolTable) {
  */
 static void
 lStripUnusedDebugInfo(llvm::Module *module) {
+#if ISPC_LLVM_VERSION >= ISPC_LLVM_3_9
+    // In LLVM 3.9 Global DCE is much more efficient than the LLVM 3.8's one.
+    // So, the fruitfulness of this function is negligible.
+    return;
+#else
     if (g->generateDebuggingSymbols == false)
         return;
 #if ISPC_LLVM_VERSION <= ISPC_LLVM_3_5 // <= 3.5
@@ -369,6 +374,7 @@ lStripUnusedDebugInfo(llvm::Module *module) {
     }
     for (int i = 0; i < (int)toErase.size(); ++i)
         module->eraseNamedMetadata(toErase[i]);
+#endif
 }
 
 
@@ -2223,9 +2229,9 @@ Module::writeHeader(const char *fn) {
 
     if (g->emitInstrumentation) {
         fprintf(f, "#define ISPC_INSTRUMENTATION 1\n");
-        fprintf(f, "extern \"C\" {\n");
+        fprintf(f, "#if defined(__cplusplus) && (! defined(__ISPC_NO_EXTERN_C) || !__ISPC_NO_EXTERN_C )\nextern \"C\" {\n#endif // __cplusplus\n");
         fprintf(f, "  void ISPCInstrument(const char *fn, const char *note, int line, uint64_t mask);\n");
-        fprintf(f, "}\n");
+        fprintf(f, "#if defined(__cplusplus) && (! defined(__ISPC_NO_EXTERN_C) || !__ISPC_NO_EXTERN_C )\n} /* end extern C */\n#endif // __cplusplus\n");
     }
 
     // end namespace
@@ -2336,9 +2342,9 @@ Module::writeDispatchHeader(DispatchHeaderInfo *DHI) {
 
       if (g->emitInstrumentation) {
         fprintf(f, "#define ISPC_INSTRUMENTATION 1\n");
-        fprintf(f, "extern \"C\" {\n");
+        fprintf(f, "#if defined(__cplusplus) && (! defined(__ISPC_NO_EXTERN_C) || !__ISPC_NO_EXTERN_C )\nextern \"C\" {\n#endif // __cplusplus\n");
         fprintf(f, "  void ISPCInstrument(const char *fn, const char *note, int line, uint64_t mask);\n");
-        fprintf(f, "}\n");
+        fprintf(f, "#if defined(__cplusplus) && (! defined(__ISPC_NO_EXTERN_C) || !__ISPC_NO_EXTERN_C )\n} /* end extern C */\n#endif // __cplusplus\n");
       }
 
       // end namespace
@@ -2812,10 +2818,8 @@ lCreateDispatchFunction(llvm::Module *module, llvm::Function *setISAFunc,
             !g->target->getTreatGenericAsSmth().empty()) {
             if (g->target->getTreatGenericAsSmth() == "knl_generic")
                 dispatchNum = Target::KNL_AVX512;
-            else if (g->target->getTreatGenericAsSmth() == "skx_generic")
-                dispatchNum = Target::SKX;
             else {
-                Error(SourcePos(), "*-generic target can be called only with knl or skx");
+                Error(SourcePos(), "*-generic target can be called only with knl");
                 exit(1);
             }
         }
