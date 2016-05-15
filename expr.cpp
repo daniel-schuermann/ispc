@@ -4795,17 +4795,12 @@ IndexExpr::GetComment() const {
         g->annotateCode--;
     }
     if(index->GetType()->IsUniformType()) { // load/store
-        if(!baseExpr->GetType()->IsVaryingType())// TODO
+        if(!baseExpr->GetType()->GetBaseType()->IsVaryingType())// array of uniform?
             ret += IsLhs? "[store] " : "[load] ";
         else 
             ret += IsLhs? "[vector store] " : "[vector load] ";
     } else { // gather/scatter
-        if(baseExpr->GetType()->IsUniformType())
-            ret += IsLhs? "[scatter] " : "[gather] ";
-        else
-            ret += "[" + std::to_string(g->target->getVectorWidth()) 
-                + "x " + (IsLhs? "scatter" : "gather") + "] ";
-    
+            ret += IsLhs? "[scatter!] " : "[gather!] ";    
     }
     ret += baseExpr->GetComment();
     g->annotateCode--;
@@ -7894,7 +7889,7 @@ PtrDerefExpr::GetComment() const {
             ret += IsLhs? "([scatter!] *" : "([gather!] *";
         else // worst
             ret += "([" + std::to_string(g->target->getVectorWidth()) 
-                + "x " + (IsLhs? "scatter" : "gather") + "!] *";
+                + "x vector" + (IsLhs? "store" : "load") + "!] *";
     }
     
     ret += expr->GetComment() + ")";
