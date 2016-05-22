@@ -510,7 +510,7 @@ Module::CompileFile() {
 
     ast->GenerateIR();
 
-    if (g->annotateCode)
+    if (g->annotateCode && errorCount == 0)
         annotateCode();
     if (diBuilder)
         diBuilder->finalize();
@@ -3346,6 +3346,7 @@ Module::annotateCode() {
     const std::map<std::string, Symbol *> * globals = symbolTable->getGlobals();
 
     for(auto v = globals->cbegin(); v != globals->cend(); ++v) {
+        if(v->second == NULL) continue;
         linenumber = v->second->pos.first_line;
         // we only want global variables that are actually declared in our file.
         if(linenumber == 0 || strcmp(filename, v->second->pos.name) != 0) continue;
@@ -3361,6 +3362,7 @@ Module::annotateCode() {
     
     for(auto it = functions->cbegin(); it != functions->cend(); ++it) {
         const Symbol* sym = (*it)->GetSymbol();
+        if(sym == NULL) continue;
         linenumber = sym->pos.first_line -1; // the source pos points to the first line of stmt block
         // we only want functions that are actually declared in our file
         if(linenumber == 0 || strcmp(filename, sym->pos.name) != 0) continue;
@@ -3381,12 +3383,14 @@ Module::annotateCode() {
             }
         }
         comments[linenumber] = comment;
-        
+
         // third: code
         const Stmt* code = (*it)->GetCode();
+        if(code == NULL) continue;
         code->GetComments(&comments);
+                                
     }
-    
+
     // annotate code
     std::string filename_explained = std::string(filename);
     std::size_t found = filename_explained.rfind(".ispc");
@@ -3419,4 +3423,5 @@ Module::annotateCode() {
 		
     initialFile.close();
     outputFile.close();
+
 }
