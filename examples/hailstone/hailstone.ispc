@@ -39,14 +39,33 @@ export void hailstone_bad(uniform int values[], uniform int length) {
         int value = i+1;
         while(value != 1) {
             iters++;
-                if((value &1) == 0) //even
-                    value = value >> 1;//value /= 2;
-                else //odd
-                    value = value *3 + 1;
+            if((value % 2) == 0) //even
+                value /= 2;//value /= 2;
+            else //odd
+                value = value *3 + 1;
         }
         values[i] = iters;
     }
 }
+
+/*
+export void hailstone_ispc(uniform int values[], uniform int length) {
+    for(int i = programIndex; i < length; i+=programCount) {
+        int iters = 0;
+        int value = i+1;
+        while(value != 1) {
+            iters++;
+            unmasked {
+            if((value &1) == 0) //even
+                value = value >> 1;//value /= 2;
+            else //odd
+                value = value *3 + 1;
+        }}
+        values[i] = iters;
+    }
+}
+*/
+
 
 export void hailstone_ispc(uniform int values[], uniform int length) {
     int i = programIndex;
@@ -54,7 +73,7 @@ export void hailstone_ispc(uniform int values[], uniform int length) {
     int value = i+1;
     uniform int top = programCount;
     while(true) {
-        if(value != 1) {
+        cif(value != 1) {
             iters++;
             unmasked{
                 if((value&1) == 0)
@@ -64,12 +83,38 @@ export void hailstone_ispc(uniform int values[], uniform int length) {
             }
         }else{
             values[i] = iters;
-            foreach_active(index) {
+            foreach_active(index)
                 i = top++;
-            }
             iters = 0;
             value = i+1;
             if(i > length) break;
         }
     }
 }
+
+
+
+/*
+[bad ispc]:		[13.608] million cycles
+[hailstone ispc]:		[10.552] million cycles // modulo -> and
+[hailstone serial]:		[12.411] million cycles
+				(1.18x speedup from ISPC)
+
+
+[bad ispc]:		[13.652] million cycles
+[hailstone ispc]:		[10.140] million cycles // complete strength reduction
+[hailstone serial]:		[12.589] million cycles
+				(1.24x speedup from ISPC)
+
+[bad ispc]:		[13.543] million cycles
+[hailstone ispc]:		[9.398] million cycles // strength reduction + unmasked
+[hailstone serial]:		[12.580] million cycles
+				(1.34x speedup from ISPC)
+
+[bad ispc]:		[13.562] million cycles
+[hailstone ispc]:		[7.235] million cycles // rewrite as one loop
+[hailstone serial]:		[12.588] million cycles
+				(1.74x speedup from ISPC)
+
+
+*/

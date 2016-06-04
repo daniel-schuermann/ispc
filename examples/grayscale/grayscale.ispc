@@ -48,7 +48,7 @@ export void tograyscale_ispc(uniform unsigned int8 * uniform graybuf,
         gc = buf[3*ofs+1];
         bc = buf[3*ofs+2];
         l = (0.2126*rc + 0.7152*gc + 0.0722*bc + 0.5);
-        graybuf[ofs] = l; // replace ofs with line+y
+        graybuf[line+y] = l; // replace ofs with line+y
       }
    }
 }
