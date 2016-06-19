@@ -2,34 +2,41 @@
 // Small Functions
 // ******
 
-static inline int16 Clip3_ispc(int minVal, int maxVal, int v)
+
+static inline unmasked int qpel_h(uniform const int16 src[], int col, uniform int cstep, int c0, int c1, int c2, int c3)
 {
-  return min(max(minVal, v), maxVal);
+  int s0,s1,s2,s3,sum;
+  s0 = src[ col + cstep*0];
+  s1 = src[ col + cstep*1];
+  s2 = src[ col + cstep*2];
+  s3 = src[ col + cstep*3];
+  sum = s0*c0 + s1*c1 + s2*c2 + s3*c3;
+  return sum;
 }
 
 // ******
 // qpelC
 // ******
-/*
-static inline int16 qpelC_store(const int32 sum,
+
+static inline unmasked int16 qpelC_store(const int32 sum,
 				const int16 old_val,
 				const int32 index,
-				const bool  shiftBack,
-				const bool  bWeight,
-				const bool  biPred,				 
-				const int32 iMaxVal,
-				const int32 offset,
-				const int32 shift_param,
+				const uniform bool  shiftBack,
+				const uniform bool  bWeight,
+				const uniform bool  biPred,				 
+				const uniform int32 iMaxVal,
+				const uniform int32 offset,
+				const uniform int32 shift_param,
 				const uniform int32 w0[2],
 				const uniform int32 w1[2],
-				const int32 wmod,
+				const uniform int32 wmod,
 				const uniform int32 offsetW[2],
-				const int32 shiftW,
-				const int32 offsetAvg,
-				const int32 shiftAvg)
+				const uniform int32 shiftW,
+				const uniform int32 offsetAvg,
+				const uniform int32 shiftAvg)
 {
   if ( shiftBack ){
-    return Clip3_ispc(0, iMaxVal, ( sum + offset ) >> shift_param);
+    return clamp(( sum + offset ) >> shift_param, 0, iMaxVal);
   } else {
     // replace short with int, as there might be problems otherwise
     //int16 val = sum >> shift_param;
@@ -37,24 +44,24 @@ static inline int16 qpelC_store(const int32 sum,
     if (bWeight){
       if ( biPred ){
         if(wmod == 1)
-	return Clip3_ispc(0, iMaxVal, (w0[0]*old_val + w1[0]*val + offsetW[0] ) >> shiftW );
+	return clamp((w0[0]*old_val + w1[0]*val + offsetW[0] ) >> shiftW, 0, iMaxVal );
         if(wmod == 2)
-	return Clip3_ispc(0, iMaxVal, (w0[index&1]*old_val + w1[index&1]*val + offsetW[index&1] ) >> shiftW );
+	return clamp((w0[index&1]*old_val + w1[index&1]*val + offsetW[index&1] ) >> shiftW, 0, iMaxVal );
       } else {
         if(wmod == 1)
-	return Clip3_ispc(0, iMaxVal, (w0[0]*val + offsetW[0] ) >> shiftW );
+	return clamp((w0[0]*val + offsetW[0] ) >> shiftW, 0, iMaxVal );
 	      if(wmod == 2)
-	return Clip3_ispc(0, iMaxVal, (w0[index&1]*val + offsetW[index&1] ) >> shiftW );
+	return clamp((w0[index&1]*val + offsetW[index&1] ) >> shiftW, 0, iMaxVal );
       }
     } else if (biPred){
-      return Clip3_ispc(0, iMaxVal, (old_val + val + offsetAvg) >> shiftAvg );
+      return clamp((old_val + val + offsetAvg) >> shiftAvg, 0, iMaxVal );
     }
     else {
       return val;
     }
   }
 }
-*/
+
 export static void qpel_shiftBack(uniform const int16 src[],
 			uniform const int32 srcStride,
 			uniform int16 dst[],
@@ -68,18 +75,14 @@ export static void qpel_shiftBack(uniform const int16 src[],
 			uniform const int32 iMaxVal,
 			uniform const int32 offset)
 {
-  foreach (row = 0...height, col = 0 ... width) {
-    
-    int dst_index = row * dstStride + col;
-    int src_index = row * srcStride + col;
-    
-    int sum = 0;
-    sum += src[ src_index + cstep*0] * (int)coeff[0];
-    sum += src[ src_index + cstep*1] * (int)coeff[1];
-    sum += src[ src_index + cstep*2] * (int)coeff[2];
-    sum += src[ src_index + cstep*3] * (int)coeff[3];
-    
-    dst[dst_index] = Clip3_ispc(0, iMaxVal, ( sum + offset ) >> shift_param);
+  //foreach (row = 0...height, col = 0 ... width) {
+  for(uniform int row = 0; row<height; ++row) {
+    for(int col = programIndex; col<width; col+=programCount) {
+      int sum = qpel_h(src, col, cstep, coeff[0], coeff[1], coeff[2], coeff[3]);
+      dst[col] = clamp(( sum + offset ) >> shift_param, 0, iMaxVal);
+    }
+    dst += dstStride;
+    src += srcStride;
   }
 }
 
@@ -99,19 +102,13 @@ export static void qpel_bW_biP_Chr(uniform const int16 src[],
 			uniform const int32 offsetW[2],
 			uniform const int32 shiftW)
 {
-
-  foreach (row = 0...height, col = 0 ... width) {
-    
-    int dst_index = row * dstStride + col;
-    int src_index = row * srcStride + col;
-    
-    int sum = 0;
-    sum += src[ src_index + cstep*0] * (int)coeff[0];
-    sum += src[ src_index + cstep*1] * (int)coeff[1];
-    sum += src[ src_index + cstep*2] * (int)coeff[2];
-    sum += src[ src_index + cstep*3] * (int)coeff[3];
-    
-    dst[dst_index] = Clip3_ispc(0, iMaxVal, (w0[dst_index&1]*dst[dst_index] + w1[dst_index&1]*(sum >> shift_param) + offsetW[dst_index&1] ) >> shiftW );
+  for(uniform int row = 0; row<height; ++row) {
+    for(int col = programIndex; col<width; col+=programCount) {
+      int sum = qpel_h(src, col, cstep, coeff[0], coeff[1], coeff[2], coeff[3]);
+      dst[col] = clamp((w0[col&1]*dst[col] + w1[col&1]*(sum >> shift_param) + offsetW[col&1] ) >> shiftW, 0, iMaxVal );
+    }
+    dst += dstStride;
+    src += srcStride;
   }
 }
 
@@ -131,19 +128,13 @@ export static void qpel_bW_biP(uniform const int16 src[],
 			uniform const int32 offsetW[2],
 			uniform const int32 shiftW)
 {
-
-  foreach (row = 0...height, col = 0 ... width) {
-    
-    int dst_index = row * dstStride + col;
-    int src_index = row * srcStride + col;
-    
-    int sum = 0;
-    sum += src[ src_index + cstep*0] * (int)coeff[0];
-    sum += src[ src_index + cstep*1] * (int)coeff[1];
-    sum += src[ src_index + cstep*2] * (int)coeff[2];
-    sum += src[ src_index + cstep*3] * (int)coeff[3];
-    
-    dst[dst_index] = Clip3_ispc(0, iMaxVal, (w0[0]*dst[dst_index] + w1[0]*(sum >> shift_param) + offsetW[0] ) >> shiftW );
+  for(uniform int row = 0; row<height; ++row) {
+    for(int col = programIndex; col<width; col+=programCount) {
+      int sum = qpel_h(src, col, cstep, coeff[0], coeff[1], coeff[2], coeff[3]);
+      dst[col] = clamp((w0[0]*dst[col] + w1[0]*(sum >> shift_param) + offsetW[0] ) >> shiftW, 0, iMaxVal );
+    }
+    dst += dstStride;
+    src += srcStride;
   }
 }
 
@@ -162,19 +153,13 @@ export static void qpel_bW_Chr(uniform const int16 src[],
 			uniform const int32 offsetW[2],
 			uniform const int32 shiftW)
 {
-
-  foreach (row = 0...height, col = 0 ... width) {
-    
-    int dst_index = row * dstStride + col;
-    int src_index = row * srcStride + col;
-    
-    int sum = 0;
-    sum += src[ src_index + cstep*0] * (int)coeff[0];
-    sum += src[ src_index + cstep*1] * (int)coeff[1];
-    sum += src[ src_index + cstep*2] * (int)coeff[2];
-    sum += src[ src_index + cstep*3] * (int)coeff[3];
-    
-    dst[dst_index] = Clip3_ispc(0, iMaxVal, (w0[dst_index&1]*(sum >> shift_param) + offsetW[dst_index&1] ) >> shiftW );
+  for(uniform int row = 0; row<height; ++row) {
+    for(int col = programIndex; col<width; col+=programCount) {
+      int sum = qpel_h(src, col, cstep, coeff[0], coeff[1], coeff[2], coeff[3]);
+      dst[col] = clamp((w0[col&1]*(sum >> shift_param) + offsetW[col&1] ) >> shiftW, 0, iMaxVal );
+    }
+    dst += dstStride;
+    src += srcStride;
   }
 }
 
@@ -193,19 +178,13 @@ export static void qpel_bW(uniform const int16 src[],
 			uniform const int32 offsetW[2],
 			uniform const int32 shiftW)
 {
-
-  foreach (row = 0...height, col = 0 ... width) {
-    
-    int dst_index = row * dstStride + col;
-    int src_index = row * srcStride + col;
-    
-    int sum = 0;
-    sum += src[ src_index + cstep*0] * (int)coeff[0];
-    sum += src[ src_index + cstep*1] * (int)coeff[1];
-    sum += src[ src_index + cstep*2] * (int)coeff[2];
-    sum += src[ src_index + cstep*3] * (int)coeff[3];
-    
-    dst[dst_index] = Clip3_ispc(0, iMaxVal, (w0[0]*(sum >> shift_param) + offsetW[0] ) >> shiftW );
+  for(uniform int row = 0; row<height; ++row) {
+    for(int col = programIndex; col<width; col+=programCount) {
+      int sum = qpel_h(src, col, cstep, coeff[0], coeff[1], coeff[2], coeff[3]);
+      dst[col] = clamp((w0[0]*(sum >> shift_param) + offsetW[0] ) >> shiftW, 0, iMaxVal );
+    }
+    dst += dstStride;
+    src += srcStride;
   }
 }
 
@@ -223,18 +202,13 @@ export static void qpel_biPred(uniform const int16 src[],
 			uniform const int32 offsetAvg,
 			uniform const int32 shiftAvg)
 {
-  foreach (row = 0...height, col = 0 ... width) {
-    
-    int dst_index = row * dstStride + col;
-    int src_index = row * srcStride + col;
-    
-    int sum = 0;
-    sum += src[ src_index + cstep*0] * (int)coeff[0];
-    sum += src[ src_index + cstep*1] * (int)coeff[1];
-    sum += src[ src_index + cstep*2] * (int)coeff[2];
-    sum += src[ src_index + cstep*3] * (int)coeff[3];
-    
-    dst[dst_index] = Clip3_ispc(0, iMaxVal, (dst[dst_index] + (sum >> shift_param) + offsetAvg) >> shiftAvg );
+  for(uniform int row = 0; row<height; ++row) {
+    for(int col = programIndex; col<width; col+=programCount) {
+      int sum = qpel_h(src, col, cstep, coeff[0], coeff[1], coeff[2], coeff[3]);
+      dst[col] = clamp((dst[col] + (sum >> shift_param) + offsetAvg) >> shiftAvg, 0, iMaxVal );
+    }
+    dst += dstStride;
+    src += srcStride;
   }
 }
 
@@ -249,23 +223,19 @@ export static void qpel_nothing(uniform const int16 src[],
 			// function param
 			uniform const int32 cstep)
 {
-
-  foreach (row = 0...height, col = 0 ... width) {
-
-    int dst_index = row * dstStride + col;
-    int src_index = row * srcStride + col;
-    
-    int sum = 0;
-    sum += src[ src_index + cstep*0] * (int)coeff[0];
-    sum += src[ src_index + cstep*1] * (int)coeff[1];
-    sum += src[ src_index + cstep*2] * (int)coeff[2];
-    sum += src[ src_index + cstep*3] * (int)coeff[3];
-
-    dst[dst_index] = sum >> shift_param;
+  for(uniform int row = 0; row<height; ++row) {
+    for(int col = programIndex; col<width; col+=programCount) {
+      int sum = qpel_h(src, col, cstep, coeff[0], coeff[1], coeff[2], coeff[3]);
+      dst[col] = sum >> shift_param;
+    }
+    dst += dstStride;
+    src += srcStride;
   }
 }
-/*
-static inline void qpel_ispc_h(uniform const int16 src[],
+
+
+// this version 
+export static inline void qpel_ispc_h(uniform const int16 src[],
 			uniform const int32 srcStride,
 			uniform int16 dst[],
 			uniform const int32 dstStride,
@@ -290,19 +260,13 @@ static inline void qpel_ispc_h(uniform const int16 src[],
 			uniform const int32 offsetAvg,
 			uniform const int32 shiftAvg)
 {
-
-  foreach (row = 0...height, col = 0 ... width) {
-    
-    int dst_index = row * dstStride + col;
-    int src_index = row * srcStride + col;
-    
-    int sum = 0;
-    sum += src[ src_index + cstep*0] * (int)coeff[0];
-    sum += src[ src_index + cstep*1] * (int)coeff[1];
-    sum += src[ src_index + cstep*2] * (int)coeff[2];
-    sum += src[ src_index + cstep*3] * (int)coeff[3];
-    
-    dst[dst_index] = qpelC_store(sum, dst[dst_index], dst_index, shiftBack, bWeight, biPred, iMaxVal, offset, shift_param, w0, w1, wmod, offsetW, shiftW, offsetAvg, shiftAvg);
+  for(uniform int row = 0; row<height; ++row) {
+    for(int col = programIndex; col<width; col+=programCount) {
+      int sum = qpel_h(src, col, cstep, coeff[0], coeff[1], coeff[2], coeff[3]);
+      dst[col] = qpelC_store(sum, dst[col], col, shiftBack, bWeight, biPred, iMaxVal, offset, shift_param, w0, w1, wmod, offsetW, shiftW, offsetAvg, shiftAvg);
+    }
+    dst += dstStride;
+    src += srcStride;
   }
 }
 
@@ -333,39 +297,26 @@ export void qpel_ispc(uniform const int16 src[],
 			uniform const int32 offsetAvg,
 			uniform const int32 shiftAvg)
 {
-  if(bChromaIntl) {
-    if ( shiftBack ){
-      qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, true, biPred, bWeight, cstep, iMaxVal, offset, w0, w1, 2, offsetW, shiftW, offsetAvg, shiftAvg);
-    } else {
-      if (bWeight){
-        if ( biPred ){
-          qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, false, true, true, cstep, iMaxVal, offset, w0, w1, 2, offsetW, shiftW, offsetAvg, shiftAvg);
-        } else {
-          qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, false, false, true, cstep, iMaxVal, offset, w0, w1, 2, offsetW, shiftW, offsetAvg, shiftAvg);
-        }
-      } else if (biPred){
-          qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, false, true, false, cstep, iMaxVal, offset, w0, w1, 2, offsetW, shiftW, offsetAvg, shiftAvg);
-      }
-      else {
-          qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, false, false, false, cstep, iMaxVal, offset, w0, w1, 2, offsetW, shiftW, offsetAvg, shiftAvg);
-      }
-    }
+  if ( shiftBack ){
+    qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, true, false, false, cstep, iMaxVal, offset, w0, w1, 2, offsetW, shiftW, offsetAvg, shiftAvg);
   } else {
-    if ( shiftBack ){
-      qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, true, biPred, bWeight, cstep, iMaxVal, offset, w0, w1, 1, offsetW, shiftW, offsetAvg, shiftAvg);
-    } else {
-      if (bWeight){
-        if ( biPred ){
+    if (bWeight){
+      if ( biPred ){
+        if(bChromaIntl)
+          qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, false, true, true, cstep, iMaxVal, offset, w0, w1, 2, offsetW, shiftW, offsetAvg, shiftAvg);
+        else
           qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, false, true, true, cstep, iMaxVal, offset, w0, w1, 1, offsetW, shiftW, offsetAvg, shiftAvg);
-        } else {
-        qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, false, false, true, cstep, iMaxVal, offset, w0, w1, 1, offsetW, shiftW, offsetAvg, shiftAvg);
-        }
-      } else if (biPred){
-          qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, false, true, false, cstep, iMaxVal, offset, w0, w1, 1, offsetW, shiftW, offsetAvg, shiftAvg);
+      } else {
+        if(bChromaIntl)
+          qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, false, false, true, cstep, iMaxVal, offset, w0, w1, 2, offsetW, shiftW, offsetAvg, shiftAvg);
+        else
+          qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, false, false, true, cstep, iMaxVal, offset, w0, w1, 1, offsetW, shiftW, offsetAvg, shiftAvg);
       }
-      else {
-          qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, false, false, false, cstep, iMaxVal, offset, w0, w1, 1, offsetW, shiftW, offsetAvg, shiftAvg);
-      }
+    } else if (biPred){
+        qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, false, true, false, cstep, iMaxVal, offset, w0, w1, 2, offsetW, shiftW, offsetAvg, shiftAvg);
+    }
+    else {
+        qpel_ispc_h(src, srcStride, dst, dstStride, width, height, shift_param, bitdepth, coeff, false, false, false, cstep, iMaxVal, offset, w0, w1, 2, offsetW, shiftW, offsetAvg, shiftAvg);
     }
   }
-}*/
+}
