@@ -108,6 +108,7 @@ usage(int ret) {
     printf("    [--emit-c++]\t\t\tEmit a C++ source file as output\n");
     printf("    [--emit-llvm]\t\t\tEmit LLVM bitode file as output\n");
     printf("    [--emit-obj]\t\t\tGenerate object file file as output (default)\n");
+    printf("    [--explain=<n>]\t\t\tAnnotate code with additional information. Types for <n> nested expressions are provided.\n");
     printf("    [--force-alignment=<value>]\t\tForce alignment in memory allocations routine to be <value>\n");
     printf("    [-g]\t\t\t\tGenerate debugging information\n");
     printf("    [--help]\t\t\t\tPrint help\n");
@@ -157,7 +158,6 @@ devUsage(int ret) {
     lPrintVersion();
     printf("\nusage (developer options): ispc\n");
     printf("    [--debug]\t\t\t\tPrint information useful for debugging ispc\n");
-    printf("    [--explain=<value>]\t\t\t\tAnnotate code with debugging information. Types for <value> nested expressions are provided.\n");
     printf("    [--print-target]\t\t\tPrint target's information\n");
     printf("    [--fuzz-test]\t\t\tRandomly perturb program input to test error conditions\n");
     printf("    [--fuzz-seed=<value>]\t\tSeed value for RNG for fuzz testing\n");
