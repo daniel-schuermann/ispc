@@ -9,7 +9,7 @@ which annotates ispc source code with following information:
 - overload resolution 
 
 More details about this extension, the provided examples
-and the language ``ispc`` can be found `here <https://github.com/daniel-schuermann/ispc/blob/master/doc/ISPC_BA_Thesis_Daniel_Schuermann.pdf>`_.
+and the language ``ispc`` can be found `here <https://github.com/daniel-schuermann/ispc/raw/master/docs/ISPC_BA_Thesis_Daniel_Schuermann.pdf>`_.
 
 ==============================
 Intel(r) SPMD Program Compiler
