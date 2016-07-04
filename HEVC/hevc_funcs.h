@@ -40,8 +40,5 @@ inline T Clip3( T minVal, T maxVal, T v) {
 }
 
 #include "interpolation_std.h"
-//#include "interpolation_impl.h"
-//#include "interpolation_expl.h"
 #include "interpolation_hybrid.h"
-
 #endif
