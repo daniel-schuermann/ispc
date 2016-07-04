@@ -58,14 +58,18 @@ int main(int argc, char *argv[]) {
     double minISPC = 1e30;
     for (unsigned int i = 0; i < test_iterations[0]; ++i) {
         reset_and_start_timer();
-        hailstone_bad(values, length);
+        hailstone_ispc(values, length);
         double dt = get_elapsed_mcycles();
         //printf("@time of ISPC run:\t\t\t[%.3f] million cycles\n", dt);
         minISPC = std::min(minISPC, dt);
     }
 
-    printf("[bad ispc]:\t\t[%.3f] million cycles\n", minISPC);
-
+    printf("[original ispc]:\t\t[%.3f] million cycles\n", minISPC);
+    
+    // Clear out the buffer
+    for (unsigned int i = 0; i < length; ++i)
+        values[i] = 0;
+        
     //
     // Compute the hailstone sequence using the ispc implementation; report the minimum
     // time of three runs.
@@ -73,14 +77,33 @@ int main(int argc, char *argv[]) {
     //double minISPC = 1e30;
     for (unsigned int i = 0; i < test_iterations[0]; ++i) {
         reset_and_start_timer();
-        hailstone_ispc(values, length);
+        hailstone_ispc_strengthreduct(values, length);
         double dt = get_elapsed_mcycles();
         //printf("@time of ISPC run:\t\t\t[%.3f] million cycles\n", dt);
         minISPC = std::min(minISPC, dt);
     }
 
-    printf("[hailstone ispc]:\t\t[%.3f] million cycles\n", minISPC);
-
+    printf("[strength reduct opt ispc]:\t[%.3f] million cycles\n", minISPC);
+    
+    // Clear out the buffer
+    for (unsigned int i = 0; i < length; ++i)
+        values[i] = 0;
+        
+    //
+    // Compute the hailstone sequence using the ispc implementation; report the minimum
+    // time of three runs.
+    //
+    //double minISPC = 1e30;
+    for (unsigned int i = 0; i < test_iterations[0]; ++i) {
+        reset_and_start_timer();
+        hailstone_ispc_controlflow(values, length);
+        double dt = get_elapsed_mcycles();
+        //printf("@time of ISPC run:\t\t\t[%.3f] million cycles\n", dt);
+        minISPC = std::min(minISPC, dt);
+    }
+    
+    printf("[control flow opt ispc]:\t[%.3f] million cycles\n", minISPC);
+        
     // Clear out the buffer
     for (unsigned int i = 0; i < length; ++i)
         values[i] = 0;

@@ -32,8 +32,7 @@
 */
 
 
-
-export void hailstone_bad(uniform int values[], uniform int length) {
+export void hailstone_ispc(uniform int values[], uniform int length) {
     for(int i = programIndex; i < length; i+=programCount) {
         int iters = 0;
         int value = i+1;
@@ -48,8 +47,8 @@ export void hailstone_bad(uniform int values[], uniform int length) {
     }
 }
 
-/*
-export void hailstone_ispc(uniform int values[], uniform int length) {
+
+export void hailstone_ispc_strengthreduct(uniform int values[], uniform int length) {
     for(int i = programIndex; i < length; i+=programCount) {
         int iters = 0;
         int value = i+1;
@@ -64,10 +63,10 @@ export void hailstone_ispc(uniform int values[], uniform int length) {
         values[i] = iters;
     }
 }
-*/
 
 
-export void hailstone_ispc(uniform int values[], uniform int length) {
+
+export void hailstone_ispc_controlflow(uniform int values[], uniform int length) {
     int i = programIndex;
     int iters = 0;
     int value = i+1;
@@ -91,15 +90,28 @@ export void hailstone_ispc(uniform int values[], uniform int length) {
         }
     }
 }
-
-
+/*
+void hailstone_serial(int values[], int length) {
+	for(int i = 0; i<length; ++i) {
+	    int iters = 0;
+	    int value = i+1;
+		while(value != 1) {
+			if((value % 2) == 0) //even
+				value /= 2;
+			else //odd
+				value = value *3 + 1;
+			iters++;
+		}
+		values[i] = iters;
+	}
+}
+*/
 
 /*
-[bad ispc]:		[13.608] million cycles
-[hailstone ispc]:		[10.552] million cycles // modulo -> and
-[hailstone serial]:		[12.411] million cycles
-				(1.18x speedup from ISPC)
-
+[bad ispc]:		[13.061] million cycles // only unmasked
+[hailstone ispc]:		[10.149] million cycles // complete strength reduction
+[hailstone serial]:		[12.591] million cycles
+				(1.24x speedup from ISPC)
 
 [bad ispc]:		[13.652] million cycles
 [hailstone ispc]:		[10.140] million cycles // complete strength reduction
@@ -116,5 +128,10 @@ export void hailstone_ispc(uniform int values[], uniform int length) {
 [hailstone serial]:		[12.588] million cycles
 				(1.74x speedup from ISPC)
 
-
+//summerize
+serial: 12.5 million cycles
+original ispc: 13.6 million cycles
+unmasked: 13.1 million cycles
+strength reduct: 10.1 million cycles
+complete: 9.4 million cycles
 */
